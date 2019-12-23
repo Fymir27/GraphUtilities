@@ -12,6 +12,8 @@ Copy GraphUtilities/Graph.cs into your project (it's just one file)
 
 ## Developing
 
+[Documentation](https://github.com/Fymir27/GraphUtilities/blob/master/GraphUtilities/Documentation/Documentation.html)
+
 GraphUtilitiesTest contains Unit Test for the library if you ever want to modify it
 
 ## Features
