@@ -1,18 +1,18 @@
 # GraphUtilities
 
-A .NET library for creating and using with undirected graphs
+A .NET library for creating and using undirected graphs
 
 ## Installing / Getting started
 
-Option1:
+Option 1:
 Build the .dll yourself by opening the VisualStudio solution (GraphUtilities.sln) and building it (F7)
 
-Option2:
+Option 2:
 Copy GraphUtilities/Graph.cs into your project (it's just one file)
 
 ## Developing
 
-GraphUtilitiesTest/ contains Unit Test for the library if you ever want to modify it
+GraphUtilitiesTest contains Unit Test for the library if you ever want to modify it
 
 ## Features
 
