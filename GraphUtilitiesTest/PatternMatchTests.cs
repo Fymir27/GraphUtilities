@@ -45,14 +45,17 @@ namespace GraphUtilitiesTest
             var pv1 = new IntVertex(1);
             pattern.AddVertex(pv1);
 
-            Assert.IsTrue(graph.FindPattern(pattern));
+            MatchResult result = graph.FindPattern(pattern);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Vertices.Count == pattern.Vertices.Count);
+            Assert.IsTrue(result.Vertices[pv1] == v1);
 
             var pv3 = new IntVertex(3);
             pattern.AddVertex(pv3);
             var e = new Edge(pv1, pv3);
             pattern.AddEdge(e);
 
-            Assert.IsFalse(graph.FindPattern(pattern));
+            Assert.IsNull(graph.FindPattern(pattern));
             pattern.RemoveEdge(e);
 
             var pv2 = new IntVertex(2);
@@ -68,21 +71,37 @@ namespace GraphUtilitiesTest
             var ep4 = new Edge(pv1, pv4);
             pattern.AddEdge(ep4);
 
-            Assert.IsTrue(graph.FindPattern(pattern));
+            result = graph.FindPattern(pattern);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Vertices.Count == pattern.Vertices.Count);
+            Assert.IsTrue(result.Edges.Count == 4);
 
             var pv5 = new IntVertex(3);
             pattern.AddVertex(pv5);
             var ep5 = new Edge(pv2, pv5);
             pattern.AddEdge(ep5);
 
-            Assert.IsTrue(graph.FindPattern(pattern));
+            result = graph.FindPattern(pattern);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Vertices.Count == pattern.Vertices.Count);
+            Assert.IsTrue(result.Edges.Count == 5);
+
+            // see if vertices/edges are there
+            Assert.IsTrue(result.Vertices.ContainsKey(pv1));
+            Assert.IsTrue(result.Vertices.ContainsKey(pv3));
+            Assert.IsTrue(result.Vertices[pv1] == v1);
+            Assert.IsTrue(result.Vertices[pv3] == v5);
+
+            Assert.IsTrue(result.Edges.ContainsKey(ep2));
+            Assert.IsTrue(result.Edges.ContainsKey(ep4));
+
 
             var pv6 = new IntVertex(2);
             pattern.AddVertex(pv6);
             var ep6 = new Edge(pv2, pv6);
             pattern.AddEdge(ep6);
 
-            Assert.IsFalse(graph.FindPattern(pattern));
+            Assert.IsNull(graph.FindPattern(pattern));
         }
 
         [TestMethod]
@@ -135,12 +154,12 @@ namespace GraphUtilitiesTest
             var ep3 = new Edge(vp3, vp4);
             pattern.AddEdge(ep3);
 
-            Assert.IsTrue(graph.FindPattern(pattern));
+            Assert.IsNotNull(graph.FindPattern(pattern));
 
             var ef = new Edge(vp1, vp3);
             pattern.AddEdge(ef);
 
-            Assert.IsFalse(graph.FindPattern(pattern));
+            Assert.IsNull(graph.FindPattern(pattern));
         }
 
         [TestMethod]
@@ -181,7 +200,7 @@ namespace GraphUtilitiesTest
             pattern.AddEdge(new StringEdge(vp2, vp3, "yellow"));
             pattern.AddEdge(new StringEdge(vp3, vp1, "blue"));
 
-            Assert.IsTrue(graph.FindPattern(pattern));
+            Assert.IsNotNull(graph.FindPattern(pattern, true));
 
             var vp4 = new StringVertex("green");
             pattern.AddVertex(vp4);
@@ -189,7 +208,7 @@ namespace GraphUtilitiesTest
             var ef = new StringEdge(vp2, vp4, "blue");
             pattern.AddEdge(ef);
 
-            Assert.IsFalse(graph.FindPattern(pattern));
+            Assert.IsNull(graph.FindPattern(pattern));
         }
     }
 }
