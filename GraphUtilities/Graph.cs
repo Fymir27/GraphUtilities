@@ -430,7 +430,7 @@ namespace GraphUtilities
                 }
 
                 var unvisitedPatternEdges = patternVertex.Edges
-                    .Where(e => !visitedPatternEdges.Contains(e));
+                    .Where(e => !visitedPatternEdges.Contains(e)).ToArray();
 
                 foreach (var patternEdge in unvisitedPatternEdges)
                 {
@@ -446,7 +446,7 @@ namespace GraphUtilities
                             !matchedEdges.Contains(e) &&
                             patternEdge.SameType(e) &&
                             nextPatternVertex.SameType(e.GetOtherVertex(matchVertex))
-                        );
+                        ).ToArray();
 
                     if (unvisitedEdges.Count() == 0)
                     {
