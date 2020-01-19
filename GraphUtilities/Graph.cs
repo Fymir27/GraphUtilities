@@ -92,7 +92,7 @@ namespace GraphUtilities
 
         public override string ToString()
         {
-            return $"{ID}: {V1.ID}--{V2.ID}";
+            return $"Edge {ID}: {V1.ID}--{V2.ID}";
         }
 
         public virtual bool SameType(Edge other)
@@ -147,14 +147,12 @@ namespace GraphUtilities
     /// <typeparam name="TEdgeData">Type of edge data</typeparam>
     public class Graph
     {
-        // --- Properties ----//
-
         /// <summary>
         /// List of vertices in the graph
         /// </summary>
         public List<Vertex> Vertices { get; private set; } = new List<Vertex>();
 
-        // --- Methods ---///
+        // ----------------------------------------------------------------------------///
 
         /// <summary>
         /// Adds a vertex to the graph
@@ -166,6 +164,10 @@ namespace GraphUtilities
             if (vertex == null)
             {
                 throw new System.ArgumentException("Can't add a vertex that is null!");
+            }
+            if(Vertices.Contains(vertex))
+            {
+                throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
             }
             Vertices.Add(vertex);
         }
@@ -254,18 +256,35 @@ namespace GraphUtilities
             return false;
         }
 
+        /// <summary>
+        /// Finds a vertex of the same type as the query vertex in the graph
+        /// </summary>
+        /// <param name="queryVertex">vertex of type you want to find</param>
+        /// <returns>vertex of the same type in graph</returns>
         public Vertex FindVertexLike(Vertex queryVertex)
         {
             AssertVertex(queryVertex);
             return Vertices.Find(v => queryVertex.SameType(v));
         }
 
+        /// <summary>
+        /// Finds ALL vertices of the same type as query vertex in the graph
+        /// </summary>
+        /// <param name="queryVertex">vertex of type you want to find</param>
+        /// <returns>all vertices of type you want to find</returns>
         public IEnumerable<Vertex> FindVerticesLike(Vertex queryVertex)
         {
             System.Type type = queryVertex.GetType();
             return Vertices.Where(v => queryVertex.SameType(v));
         }
 
+        /// <summary>
+        /// Finds a pattern (subgraph) in the host graph (this graph)
+        /// Returns null on failing to match
+        /// </summary>
+        /// <param name="pattern">pattern graph to look for</param>
+        /// <param name="verbose">set true for writing trace to console</param>
+        /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
         public MatchResult FindPattern(Graph pattern, bool verbose = false)
         {
             if (pattern == null || pattern.Vertices.Count == 0)
@@ -273,22 +292,14 @@ namespace GraphUtilities
                 throw new System.ArgumentException("Invalid pattern!");
             }
 
-            var patternVertex = pattern.Vertices[0]; // TODO: make it random
+            var patternVertex = pattern.Vertices[0]; // TODO: make it random?
             return MatchRecursively(patternVertex, verbose);
-
-            //foreach (var startVertex in FindVerticesLike(patternVertex))
-            // {
-            //    MatchResult result = new MatchResult();
-            //    bool success = IterateVertex(patternVertex, startVertex, new List<Edge>(), new List<Edge>(), result, verbose);
-            //    if(success == true)
-            //    {
-            //        //result.Vertices.Add(patternVertex, startVertex);
-            //        return result;
-            //    }
-            //}
-            //return null;
         }
 
+        /// <summary>
+        /// Validates a vertex. Throws an exception if it is null or not in the graph
+        /// </summary>
+        /// <param name="vertex">vertex to validate</param>
         public void AssertVertex(Vertex vertex)
         {
             if (vertex == null)
@@ -302,102 +313,32 @@ namespace GraphUtilities
             }
         }
 
+        /// <summary>
+        /// Validates an edge. Throws an exception if either vertex is invalid
+        /// </summary>
+        /// <param name="edge">edge to validate</param>
         public void AssertEdge(Edge edge)
         {
             AssertVertex(edge.V1);
             AssertVertex(edge.V2);
         }
 
+        /// <summary>
+        /// checks if vertex is in graph
+        /// </summary>
+        /// <param name="vertex">vertex to check</param>
+        /// <returns>wether vertex is in graph</returns>
         private bool InGraph(Vertex vertex)
         {
             return Vertices.Contains(vertex);
         }
 
-        class Match<T>
-        {
-            public T Pattern;
-            public T Matched;
-
-            public Match(T pattern, T matched)
-            {
-                Pattern = pattern;
-                Matched = matched;
-            }
-        }
-
-        class SearchState
-        {
-            public Match<Vertex> Vertex;
-            public SearchState Prev;
-            public List<Edge> FailedEdges;
-        }
-
-        /*private MatchResult MatchDepthFirst(Vertex startVertex)
-        {
-            Stack<Vertex> possibleFirstMatches = new Stack<Vertex>(FindVerticesLike(startVertex));
-
-            foreach (var firstMatch in possibleFirstMatches)
-            {
-                // list of pattern vertices match
-                Stack<SearchState> todo = new Stack<SearchState>();
-
-                List<Edge> visitedPatternEdges = new List<Edge>();
-                List<Edge> visitedHostEdges = new List<Edge>();
-
-                todo.Push(new SearchState()
-                {
-                    Vertex = new Match<Vertex>(startVertex, firstMatch)
-                });
-
-                bool failed = false;
-
-                while (todo.Count > 0 && !failed)
-                {
-                    var currentState = todo.Pop();
-
-                    var patternVertex = currentState.Vertex.Pattern;
-                    var matchVertex = currentState.Vertex.Matched;
-
-                    var unvisitedPatternEdges = patternVertex.Edges
-                        .Where(e => !visitedPatternEdges.Contains(e));
-
-                    foreach (var outgoingPatternEdge in unvisitedPatternEdges)
-                    {
-                        var nextPatternVertex = outgoingPatternEdge.GetOtherVertex(patternVertex);
-
-                        var unvisitedEdges = matchVertex.Edges
-                            .Where(e => !visitedHostEdges.Contains(e) &&
-                                !currentState.FailedEdges.Contains(e) &&
-                                outgoingPatternEdge.SameType(e) &&
-                                nextPatternVertex.SameType(e.GetOtherVertex(matchVertex)));
-
-                        if (unvisitedEdges.Count() == 0)
-                        {
-                            currentState->FailedEdges->Add()
-                        }
-
-                        visitedPatternEdges.Push(outgoingPatternEdge);
-
-                        // TODO: remove loop
-                        foreach (var nextEdge in unvisitedEdges)
-                        {
-                            var nextVertex = nextEdge.GetOtherVertex(matchVertex);
-                            visitedHostEdges.Push(nextEdge);
-                            todo.Enqueue(Tuple.Create(nextPatternVertex, nextVertex));
-                            result.Edges.Add(outgoingPatternEdge, nextEdge);
-                        }
-                    }
-                }
-                if (!failed) // means todo is empty
-                {
-                    return result;
-                }
-            }
-            // if we reach this, that means we have failed to find a match
-            // because we wouldve already returned the result
-            return null;
-        }*/
-
+        /// <summary>
+        /// recursive strategy for FindPattern()
+        /// </summary>
+        /// <param name="startVertex">pattern vertex to start with</param>
+        /// <param name="verbose">set true for writing trace to console</param>
+        /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
         private MatchResult MatchRecursively(Vertex startVertex, bool verbose)
         {
             Stack<Vertex> possibleFirstMatches = new Stack<Vertex>(FindVerticesLike(startVertex));
@@ -425,12 +366,22 @@ namespace GraphUtilities
             {
                 if (verbose)
                 {
-                    System.Console.WriteLine($"Pattern: {EnumerableToString(visitedPatternEdges)} -> {patternVertex.ID}");
-                    System.Console.WriteLine($"Matched: {EnumerableToString(matchedEdges)} -> {matchVertex.ID}\n---");
+                    System.Console.WriteLine($"Pattern: {EnumerableToString(result.Vertices.Keys.Select(v => v.ID))} -> {patternVertex.ID}");
+                    System.Console.WriteLine($"Matched: {EnumerableToString(result.Vertices.Values.Select(v => v.ID))} -> {matchVertex.ID}");
+                    System.Console.WriteLine("---");
+                }
+
+                if (!result.Vertices.ContainsKey(patternVertex))
+                {
+                    result.Vertices.Add(patternVertex, matchVertex);
+                }
+                else if (result.Vertices[patternVertex] != matchVertex)
+                {
+                    return false;
                 }
 
                 var unvisitedPatternEdges = patternVertex.Edges
-                    .Where(e => !visitedPatternEdges.Contains(e)).ToArray();
+                    .Where(e => !visitedPatternEdges.Contains(e));
 
                 foreach (var patternEdge in unvisitedPatternEdges)
                 {
@@ -446,11 +397,12 @@ namespace GraphUtilities
                             !matchedEdges.Contains(e) &&
                             patternEdge.SameType(e) &&
                             nextPatternVertex.SameType(e.GetOtherVertex(matchVertex))
-                        ).ToArray();
+                        );
 
                     if (unvisitedEdges.Count() == 0)
                     {
                         visitedPatternEdges.Remove(patternEdge);
+                        result.Vertices.Remove(patternVertex);
                         return false;
                     }
 
@@ -477,17 +429,9 @@ namespace GraphUtilities
                     if(!success)
                     {
                         visitedPatternEdges.Remove(patternEdge);
+                        result.Vertices.Remove(patternVertex);
                         return false;
                     }
-                }
-
-                if (!result.Vertices.ContainsKey(patternVertex))
-                {
-                    result.Vertices.Add(patternVertex, matchVertex);
-                }
-                else if (result.Vertices[patternVertex] != matchVertex)
-                {
-                    throw new Exception("Vertex matched again, but differently!");
                 }
 
                 return true;
@@ -501,6 +445,8 @@ namespace GraphUtilities
             {
                 result.Append(elem.ToString()).Append(",");
             }
+            if (result.Length == 1)
+                return "[]";
             return result.Replace(',', ']', result.Length - 1, 1).ToString();
         }
     }

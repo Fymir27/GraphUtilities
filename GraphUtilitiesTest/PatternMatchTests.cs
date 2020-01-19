@@ -200,7 +200,7 @@ namespace GraphUtilitiesTest
             pattern.AddEdge(new StringEdge(vp2, vp3, "yellow"));
             pattern.AddEdge(new StringEdge(vp3, vp1, "blue"));
 
-            Assert.IsNotNull(graph.FindPattern(pattern, true));
+            Assert.IsNotNull(graph.FindPattern(pattern));
 
             var vp4 = new StringVertex("green");
             pattern.AddVertex(vp4);
@@ -208,6 +208,12 @@ namespace GraphUtilitiesTest
             var ef = new StringEdge(vp2, vp4, "blue");
             pattern.AddEdge(ef);
 
+            Assert.IsNull(graph.FindPattern(pattern));
+            pattern.RemoveEdge(ef);
+
+            Assert.ThrowsException<System.ArgumentException>(() => pattern.AddVertex(vp4));
+            var ef2 = new DataEdge<float>(vp2, vp4, 4.2f);
+            pattern.AddEdge(ef2);
             Assert.IsNull(graph.FindPattern(pattern));
         }
     }
