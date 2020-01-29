@@ -34,7 +34,7 @@ namespace GraphUtilities
 
         public override string ToString()
         {
-            return $"Vertex {ID}: {Graph.EnumerableToString(Edges)}";
+            return $"V{ID}";
         }
 
         public virtual bool SameType(Vertex other)
@@ -53,6 +53,10 @@ namespace GraphUtilities
         public DataVertex(TData data)
         {
             Data = data;
+        }
+        public override string ToString()
+        {
+            return Data.ToString();
         }
     }
 
@@ -92,7 +96,7 @@ namespace GraphUtilities
 
         public override string ToString()
         {
-            return $"Edge {ID}: {V1.ID}--{V2.ID}";
+            return $"E{ID}";
         }
 
         public virtual bool SameType(Edge other)
@@ -112,6 +116,10 @@ namespace GraphUtilities
         public DataEdge(Vertex first, Vertex second, TData data) : base(first, second)
         {
             Data = data;
+        }
+        public override string ToString()
+        {
+            return Data.ToString();
         }
     }
 

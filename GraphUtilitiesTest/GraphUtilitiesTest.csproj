@@ -56,6 +56,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PatternMatchTests.cs" />
     <Compile Include="TestClasses.cs" />
+    <Compile Include="PrintTests.cs" />
     <Compile Include="WrongUsageTests.cs" />
   </ItemGroup>
   <ItemGroup>
