@@ -14,6 +14,8 @@ namespace GraphUtilities
 
         private static int counter = 0;
 
+        public static void ResetID() { counter = 0; }
+
         protected Unique() { ID = counter++; }
     }
 
@@ -54,6 +56,7 @@ namespace GraphUtilities
         {
             Data = data;
         }
+    
         public override string ToString()
         {
             return Data.ToString();
@@ -92,6 +95,16 @@ namespace GraphUtilities
             if (vertex == V2)
                 return V1;
             throw new System.ArgumentException("Vertex is not adjacent to this edge!");
+        }
+
+        public void ReplaceVertex(Vertex oldVertex, Vertex newVertex)
+        {
+            if (oldVertex == V1)
+                V1 = newVertex;
+            else if (oldVertex == V2)
+                V2 = newVertex;
+            else
+                throw new System.ArgumentException("Vertex is not adjacent to this edge!");
         }
 
         public override string ToString()
@@ -293,7 +306,7 @@ namespace GraphUtilities
         /// <param name="pattern">pattern graph to look for</param>
         /// <param name="verbose">set true for writing trace to console</param>
         /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
-        public MatchResult FindPattern(Graph pattern, bool verbose = false)
+        public MatchResult FindPattern(Graph pattern, bool randomMatch = false, bool verbose = false)
         {
             if (pattern == null || pattern.Vertices.Count == 0)
             {
@@ -301,7 +314,7 @@ namespace GraphUtilities
             }
 
             var patternVertex = pattern.Vertices[0]; // TODO: make it random?
-            return MatchRecursively(patternVertex, verbose);
+            return MatchRecursively(patternVertex, randomMatch, verbose);
         }
 
         /// <summary>
@@ -347,9 +360,14 @@ namespace GraphUtilities
         /// <param name="startVertex">pattern vertex to start with</param>
         /// <param name="verbose">set true for writing trace to console</param>
         /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
-        private MatchResult MatchRecursively(Vertex startVertex, bool verbose)
+        private MatchResult MatchRecursively(Vertex startVertex, bool randomMatch, bool verbose)
         {
-            Stack<Vertex> possibleFirstMatches = new Stack<Vertex>(FindVerticesLike(startVertex));
+            var possibleFirstMatches = FindVerticesLike(startVertex);
+
+            if(randomMatch)
+            {              
+                Shuffle(ref possibleFirstMatches);
+            }
 
             List<Edge> visitedPatternEdges = new List<Edge>();
             List<Edge> matchedEdges = new List<Edge>();
@@ -365,7 +383,6 @@ namespace GraphUtilities
                 visitedPatternEdges.Clear();
                 matchedEdges.Clear();
                 result = new MatchResult();
-                //return null; // TODO: remove
             }
 
             return null;
@@ -391,6 +408,11 @@ namespace GraphUtilities
                 var unvisitedPatternEdges = patternVertex.Edges
                     .Where(e => !visitedPatternEdges.Contains(e));
 
+                if(randomMatch)
+                {
+                    Shuffle(ref unvisitedPatternEdges);
+                }
+
                 foreach (var patternEdge in unvisitedPatternEdges)
                 {
                     if (visitedPatternEdges.Contains(patternEdge))
@@ -412,6 +434,11 @@ namespace GraphUtilities
                         visitedPatternEdges.Remove(patternEdge);
                         result.Vertices.Remove(patternVertex);
                         return false;
+                    }
+
+                    if(randomMatch)
+                    {
+                        Shuffle(ref unvisitedEdges);
                     }
 
                     bool success = false;
@@ -446,6 +473,65 @@ namespace GraphUtilities
             }
         }
 
+        /// <summary>
+        /// finds a pattern in the graph and replaces it with another graph
+        /// </summary>
+        /// <param name="pattern">pattern to find</param>
+        /// <param name="replacement">replacement graph</param>
+        /// <param name="directMapping">identity mapping from pattern to replacement Vertices</param>
+        /// <param name="randomMatch">set true to find pattern randomly in graph</param>
+        /// <returns>true on success; false otherwise</returns>
+        public bool Replace(Graph pattern, Graph replacement, Dictionary<Vertex, Vertex> directMapping, bool randomMatch = false)
+        {
+            var matchResult = FindPattern(pattern, randomMatch);
+
+            if (matchResult == null)
+                return false;
+
+            // go through all matched vertices to find which ones are to be directly replaced by another
+            foreach (var vertexPair in matchResult.Vertices)
+            {
+                pattern.AssertVertex(vertexPair.Key);
+
+                Vertex match = vertexPair.Value;
+                this.AssertVertex(match);
+
+                bool mappedDirectly = directMapping.TryGetValue(vertexPair.Key, out Vertex replacementVertex);
+
+                if(!mappedDirectly)
+                {
+                    RemoveVertex(match);
+                    continue;
+                }
+
+                replacement.AssertVertex(replacementVertex);
+
+                // tie edges of host graphs to replacement vertex
+                var unmatchedEdges = match.Edges.Where(e => !matchResult.Edges.Values.Contains(e));
+                replacementVertex.Edges.AddRange(unmatchedEdges);
+                foreach (var e in unmatchedEdges)
+                {
+                    e.ReplaceVertex(match, replacementVertex);
+                }
+
+                // don't use this.RemoveVertex(), because it would remove lose edges
+                // however, they aren't lose, because we just reconnected them to the replacement vertex 
+                Vertices.Remove(match);
+                AddVertex(replacementVertex);
+            }
+
+            // Add the rest of the replacement edges (that aren't directly replacing anything)
+            foreach (var vertex in replacement.Vertices)
+            {
+                if (!Vertices.Contains(vertex))
+                {
+                    AddVertex(vertex);
+                }
+            }
+
+            return true;  
+        }
+
         public static string EnumerableToString(System.Collections.IEnumerable enumerable)
         {
             System.Text.StringBuilder result = new System.Text.StringBuilder("[");
@@ -456,6 +542,21 @@ namespace GraphUtilities
             if (result.Length == 1)
                 return "[]";
             return result.Replace(',', ']', result.Length - 1, 1).ToString();
+        }
+
+        // based on Fisher-Yates shuffle
+        public void Shuffle<T>(ref IEnumerable<T> enumerable)
+        {
+            List<T> list = enumerable.ToList();
+            var rng = new Random(/*(int)System.DateTime.Now.Ticks*/);
+            for (int n = list.Count() - 1; n >= 0; n--)
+            {
+                int r = rng.Next(n + 1);
+                T value = list[r];
+                list[r] = list[n];
+                list[n] = value;
+            }
+            enumerable = list;
         }
     }
 }
