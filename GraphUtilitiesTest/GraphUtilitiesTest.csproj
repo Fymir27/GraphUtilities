@@ -58,6 +58,7 @@
     <Compile Include="TestClasses.cs" />
     <Compile Include="PrintTests.cs" />
     <Compile Include="ReplaceTests.cs" />
+    <Compile Include="DungeonGenTest.cs" />
     <Compile Include="WrongUsageTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -43,6 +43,15 @@ namespace GraphUtilities
         {
             return GetType() == other.GetType();
         }
+
+        public virtual Vertex Clone()
+        {
+            var original = this;
+            return new Vertex()
+            {
+                Edges = original.Edges.ToList()
+            };
+        }
     }
 
     /// <summary>
@@ -60,6 +69,13 @@ namespace GraphUtilities
         public override string ToString()
         {
             return Data.ToString();
+        }
+
+        public override Vertex Clone()
+        {
+            var copy = base.Clone() as DataVertex<TData>;
+            copy.Data = this.Data;
+            return copy;
         }
     }
 
@@ -188,7 +204,7 @@ namespace GraphUtilities
             }
             if(Vertices.Contains(vertex))
             {
-                throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
+                //throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
             }
             Vertices.Add(vertex);
         }
@@ -505,6 +521,8 @@ namespace GraphUtilities
                 }
 
                 replacement.AssertVertex(replacementVertex);
+
+                replacementVertex = replacementVertex.Clone();
 
                 // tie edges of host graphs to replacement vertex
                 var unmatchedEdges = match.Edges.Where(e => !matchResult.Edges.Values.Contains(e));
