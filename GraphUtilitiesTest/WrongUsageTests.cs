@@ -12,7 +12,7 @@ namespace GraphUtilitiesTest
         public void TestCreateVertex()
         {
             var graph = new Graph();
-            Assert.ThrowsException<System.ArgumentException>(() => graph.AddVertex(null));
+            Assert.ThrowsException<System.ArgumentException>(() => graph.AddVertex<Vertex>(null));
         }
 
         [TestMethod]

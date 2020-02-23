@@ -64,18 +64,6 @@ namespace GraphUtilitiesTest
             File.WriteAllText("before.gv", initialGraphString);
             File.WriteAllText("after.gv", afterReplaceString);
         }
-
-        public void RandomTest()
-        {
-            int count = 100;
-            for (int i = 0; i < count; i++)
-            {
-                Unique<Vertex>.ResetID();
-                Test1();
-                string[] lines = File.ReadAllLines("after.gv");
-                System.Console.Write(lines[1][0] + ",");
-            }
-        }
     }
 
 }

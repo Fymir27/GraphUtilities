@@ -8,15 +8,16 @@ namespace GraphUtilities
     /// Gives out unique IDs by using a unique counter for every class
     /// </summary>
     /// <typeparam name="T">Class for which to give IDs</typeparam>
-    public abstract class Unique<T>
+    public class UniqueID<T>
     {
-        public int ID { get; }
-
         private static int counter = 0;
 
-        public static void ResetID() { counter = 0; }
+        public int Value { get; } = counter++;
 
-        protected Unique() { ID = counter++; }
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
     /// <summary>
@@ -25,14 +26,11 @@ namespace GraphUtilities
     /// Data of type TVertexData is freely accessible/modifiable
     /// An instance of this can only be created by calling Graph.AddVertex(TVertexData)
     /// </summary>
-    public class Vertex : Unique<Vertex>
+    public class Vertex
     {
-        public List<Edge> Edges { get; internal set; }
+        public List<Edge> Edges { get; private set; } = new List<Edge>();
 
-        public Vertex()
-        {
-            Edges = new List<Edge>();
-        }
+        public UniqueID<Vertex> ID = new UniqueID<Vertex>();
 
         public override string ToString()
         {
@@ -68,14 +66,12 @@ namespace GraphUtilities
     
         public override string ToString()
         {
-            return Data.ToString();
+            return /*base.ToString() + ":" + */ Data.ToString();
         }
 
         public override Vertex Clone()
         {
-            var copy = base.Clone() as DataVertex<TData>;
-            copy.Data = this.Data;
-            return copy;
+            return new DataVertex<TData>(this.Data);
         }
     }
 
@@ -83,12 +79,24 @@ namespace GraphUtilities
     /// Represents an edge in the graph
     /// Keeps track of start/end vertices which are NOT freely modifiable
     /// </summary>
-    public class Edge : Unique<Edge>
+    public class Edge
     {
-        public Vertex V1 { get; internal set; }
-        public Vertex V2 { get; internal set; }
+        public Vertex V1 { get; internal set; } = null;
+        public Vertex V2 { get; internal set; } = null;
+
+        public UniqueID<Edge> ID = new UniqueID<Edge>();
+
+        public Edge()
+        {
+
+        }
 
         public Edge(Vertex first, Vertex second)
+        {
+            Init(first, second);
+        }
+
+        public void Init(Vertex first, Vertex second)
         {
             if (first == null || second == null)
             {
@@ -132,6 +140,11 @@ namespace GraphUtilities
         {
             return GetType() == other.GetType();
         }
+
+        public virtual Edge Clone()
+        {
+            return new Edge();
+        }
     }
 
     /// <summary>
@@ -142,6 +155,11 @@ namespace GraphUtilities
     {
         public TData Data { get; set; }
 
+        public DataEdge(TData data)
+        {
+            Data = data;
+        }
+
         public DataEdge(Vertex first, Vertex second, TData data) : base(first, second)
         {
             Data = data;
@@ -149,6 +167,11 @@ namespace GraphUtilities
         public override string ToString()
         {
             return Data.ToString();
+        }
+
+        public override Edge Clone()
+        {
+            return new DataEdge<TData>(this.Data);
         }
     }
 
@@ -196,7 +219,7 @@ namespace GraphUtilities
         /// </summary>
         /// <param name="data">Data saved in vertex</param>
         /// <returns>Reference to the created vertex</returns>
-        public void AddVertex(Vertex vertex)
+        public VType AddVertex<VType>(VType vertex) where VType : Vertex
         {
             if (vertex == null)
             {
@@ -204,9 +227,10 @@ namespace GraphUtilities
             }
             if(Vertices.Contains(vertex))
             {
-                //throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
+               throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
             }
             Vertices.Add(vertex);
+            return vertex;
         }
 
         /// <summary>
@@ -378,11 +402,13 @@ namespace GraphUtilities
         /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
         private MatchResult MatchRecursively(Vertex startVertex, bool randomMatch, bool verbose)
         {
+            Random rng = randomMatch ? new Random() : null;
+
             var possibleFirstMatches = FindVerticesLike(startVertex);
 
             if(randomMatch)
             {              
-                Shuffle(ref possibleFirstMatches);
+                Shuffle(ref possibleFirstMatches, rng);
             }
 
             List<Edge> visitedPatternEdges = new List<Edge>();
@@ -426,7 +452,7 @@ namespace GraphUtilities
 
                 if(randomMatch)
                 {
-                    Shuffle(ref unvisitedPatternEdges);
+                    Shuffle(ref unvisitedPatternEdges, rng);
                 }
 
                 foreach (var patternEdge in unvisitedPatternEdges)
@@ -454,7 +480,7 @@ namespace GraphUtilities
 
                     if(randomMatch)
                     {
-                        Shuffle(ref unvisitedEdges);
+                        Shuffle(ref unvisitedEdges, rng);
                     }
 
                     bool success = false;
@@ -503,38 +529,32 @@ namespace GraphUtilities
 
             if (matchResult == null)
                 return false;
-
+            
             // go through all matched vertices to find which ones are to be directly replaced by another
             foreach (var vertexPair in matchResult.Vertices)
             {
-                pattern.AssertVertex(vertexPair.Key);
+                Vertex patternVertex = vertexPair.Key;
+                Vertex matchVertex = vertexPair.Value;
 
-                Vertex match = vertexPair.Value;
-                this.AssertVertex(match);
-
-                bool mappedDirectly = directMapping.TryGetValue(vertexPair.Key, out Vertex replacementVertex);
+                bool mappedDirectly = directMapping.TryGetValue(patternVertex, out Vertex replacementVertex);
 
                 if(!mappedDirectly)
                 {
-                    RemoveVertex(match);
+                    RemoveVertex(matchVertex);
                     continue;
                 }
 
-                replacement.AssertVertex(replacementVertex);
-
-                replacementVertex = replacementVertex.Clone();
-
                 // tie edges of host graphs to replacement vertex
-                var unmatchedEdges = match.Edges.Where(e => !matchResult.Edges.Values.Contains(e));
+                var unmatchedEdges = matchVertex.Edges.Where(e => !matchResult.Edges.Values.Contains(e));
                 replacementVertex.Edges.AddRange(unmatchedEdges);
                 foreach (var e in unmatchedEdges)
                 {
-                    e.ReplaceVertex(match, replacementVertex);
+                    e.ReplaceVertex(matchVertex, replacementVertex);
                 }
 
                 // don't use this.RemoveVertex(), because it would remove lose edges
-                // however, they aren't lose, because we just reconnected them to the replacement vertex 
-                Vertices.Remove(match);
+                // however, they aren't lose, because we just reconnected them to the replacement vertex
+                Vertices.Remove(matchVertex);
                 AddVertex(replacementVertex);
             }
 
@@ -550,6 +570,11 @@ namespace GraphUtilities
             return true;  
         }
 
+        public bool Replace(ReplacementRule rule, bool randomMatch = false)
+        {
+            return Replace(rule.Pattern, rule.Replacement, rule.Mapping, randomMatch);
+        }
+
         public static string EnumerableToString(System.Collections.IEnumerable enumerable)
         {
             System.Text.StringBuilder result = new System.Text.StringBuilder("[");
@@ -563,10 +588,12 @@ namespace GraphUtilities
         }
 
         // based on Fisher-Yates shuffle
-        public void Shuffle<T>(ref IEnumerable<T> enumerable)
+        public void Shuffle<T>(ref IEnumerable<T> enumerable, Random rng = null)
         {
+            if (rng == null)
+                rng = new Random();
+
             List<T> list = enumerable.ToList();
-            var rng = new Random(/*(int)System.DateTime.Now.Ticks*/);
             for (int n = list.Count() - 1; n >= 0; n--)
             {
                 int r = rng.Next(n + 1);
@@ -576,5 +603,160 @@ namespace GraphUtilities
             }
             enumerable = list;
         }
+    }
+
+    public class ReplacementRule
+    {
+        public Graph Pattern = new Graph();
+        public Graph Replacement = new Graph();
+        public Dictionary<Vertex, Vertex> Mapping = new Dictionary<Vertex, Vertex>();
+
+        public class Builder
+        {
+            public ReplacementRule Result { get; private set; }
+
+            Vertex currentPatternVertex = null;
+            Vertex currentReplacementVertex = null;
+            Edge currentPatternEdge = null;
+            Edge currentReplacementEdge = null;
+            bool mappedVertexNextRequired = false;
+
+            Dictionary<string, Vertex> taggedPatternVertices;
+            Dictionary<string, Vertex> taggedReplacementVertices;
+
+            public Builder()
+            {
+                Result = new ReplacementRule();
+                taggedPatternVertices = new Dictionary<string, Vertex>();
+                taggedReplacementVertices = new Dictionary<string, Vertex>();
+            }
+
+            public Builder PatternVertex(Vertex vertex, string tag = "")
+            {
+                if (mappedVertexNextRequired)
+                    throw new ArgumentException("Mapped Vertex expected, only Pattern recieved!");
+
+                Result.Pattern.AddVertex(vertex);
+                FinalizePatternEdge(vertex);
+                currentPatternVertex = vertex;
+
+                if (tag.Length > 0)
+                    taggedPatternVertices[tag] = vertex;
+
+                return this;
+            }
+
+            public Builder ReplacementVertex(Vertex vertex, string tag = "")
+            {
+                if (mappedVertexNextRequired)
+                    throw new ArgumentException("Mapped Vertex expected, only Replacement recieved!");
+
+                Result.Replacement.AddVertex(vertex);
+                FinalizeReplacementEdge(vertex);
+                currentReplacementVertex = vertex;
+
+                if (tag.Length > 0)
+                    taggedReplacementVertices[tag] = vertex;
+
+                return this;
+            }
+
+            public Builder MappedVertex(Vertex patternVetex, string tag = "", Vertex replacementVertex = null)
+            {
+                // condition is satisfied
+                mappedVertexNextRequired = false;
+
+                if (replacementVertex == null)
+                    replacementVertex = patternVetex.Clone();
+
+                PatternVertex(patternVetex, tag);
+                ReplacementVertex(replacementVertex, tag);
+                Result.Mapping.Add(currentPatternVertex, currentReplacementVertex);
+                return this;
+            }
+
+            public Builder PatternEdge(Edge edge)
+            {
+                if (currentPatternVertex == null)
+                {
+                    throw new ArgumentException("No beginning Vertex for edge!");
+                }
+                currentPatternEdge = edge;
+                return this;
+            }
+
+            public Builder ReplacementEdge(Edge edge)
+            {
+                if (currentReplacementVertex == null)
+                {
+                    throw new ArgumentException("No beginning Vertex for edge!");
+                }
+                currentReplacementEdge = edge;
+                return this;
+            }
+
+            public Builder MappedEdge(Edge patternEdge, Edge replacementEdge = null)
+            {
+                if (replacementEdge == null)
+                    replacementEdge = patternEdge.Clone();
+
+                PatternEdge(patternEdge);
+                ReplacementEdge(replacementEdge);
+                mappedVertexNextRequired = true;
+
+                return this;
+            }
+
+            public Builder MoveToTag(string tag)
+            {
+                bool patternTagged = taggedPatternVertices.TryGetValue(tag, out Vertex patternVertex);
+                bool replacementTagged = taggedReplacementVertices.TryGetValue(tag, out Vertex replacementVertex);
+
+                if (currentPatternEdge != null)
+                {
+                    if (!patternTagged)
+                    {
+                        throw new ArgumentException(tag + " doesnt tag a patternVertex! -> dangling Edge!");
+                    }
+
+                    FinalizePatternEdge(patternVertex);
+                    currentPatternVertex = patternVertex;
+                }
+
+                if (currentReplacementEdge != null)
+                {
+                    if (!replacementTagged)
+                    {
+                        throw new ArgumentException(tag + " doesnt tag a replacementVertex! -> dangling Edge!");
+                    }
+
+                    FinalizeReplacementEdge(replacementVertex);
+                    currentReplacementVertex = replacementVertex;
+                }
+
+                return this;
+            }
+
+            private void FinalizePatternEdge(Vertex vertex)
+            {
+                if (currentPatternEdge != null)
+                {
+                    currentPatternEdge.Init(currentPatternVertex, vertex);
+                    Result.Pattern.AddEdge(currentPatternEdge);
+                    currentPatternEdge = null;
+                }
+            }
+
+            private void FinalizeReplacementEdge(Vertex vertex)
+            {
+                if (currentReplacementEdge != null)
+                {
+                    currentReplacementEdge.Init(currentReplacementVertex, vertex);
+                    Result.Replacement.AddEdge(currentReplacementEdge);
+                    currentReplacementEdge = null;
+                }
+            }
+        }
+
     }
 }
