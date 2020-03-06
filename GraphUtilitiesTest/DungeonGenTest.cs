@@ -37,19 +37,15 @@ namespace GraphUtilitiesTest
             {
                 var builder = new ReplacementRule.Builder();
 
-                builder.MappedVertex(new REssential(), "loop")
-                    .MappedEdge(new Edge())
-                    .MappedVertex(new REssential())
-                    .MappedEdge(new Edge())
-                    .MappedVertex(new REssential())
-                    .MappedEdge(new Edge())
-                    .MappedVertex(new REssential())
-                    .ReplacementEdge(new Edge())
-                    .ReplacementVertex(new RBasic())
-                    .ReplacementEdge(new Edge())
+                builder.MappedVertex<REssential>("loop")
+                    .MappedVertexWithEdge<REssential, Edge>()
+                    .MappedVertexWithEdge<REssential, Edge>()
+                    .MappedVertexWithEdge<REssential, Edge>()
+                    .ReplacementVertexWithEdge<RBasic, Edge>()
+                    .ReplacementEdge<Edge>()
                     .MoveToTag("loop");
 
-                bool success = Dungeon.Replace(builder.Result, randomMatch: true);
+                bool success = Dungeon.Replace(builder.GetResult(), randomMatch: true);
 
              
             }

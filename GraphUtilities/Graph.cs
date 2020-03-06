@@ -63,7 +63,7 @@ namespace GraphUtilities
         {
             Data = data;
         }
-    
+
         public override string ToString()
         {
             return /*base.ToString() + ":" + */ Data.ToString();
@@ -225,9 +225,9 @@ namespace GraphUtilities
             {
                 throw new System.ArgumentException("Can't add a vertex that is null!");
             }
-            if(Vertices.Contains(vertex))
+            if (Vertices.Contains(vertex))
             {
-               throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
+                throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
             }
             Vertices.Add(vertex);
             return vertex;
@@ -406,8 +406,8 @@ namespace GraphUtilities
 
             var possibleFirstMatches = FindVerticesLike(startVertex);
 
-            if(randomMatch)
-            {              
+            if (randomMatch)
+            {
                 Shuffle(ref possibleFirstMatches, rng);
             }
 
@@ -450,7 +450,7 @@ namespace GraphUtilities
                 var unvisitedPatternEdges = patternVertex.Edges
                     .Where(e => !visitedPatternEdges.Contains(e));
 
-                if(randomMatch)
+                if (randomMatch)
                 {
                     Shuffle(ref unvisitedPatternEdges, rng);
                 }
@@ -478,7 +478,7 @@ namespace GraphUtilities
                         return false;
                     }
 
-                    if(randomMatch)
+                    if (randomMatch)
                     {
                         Shuffle(ref unvisitedEdges, rng);
                     }
@@ -494,7 +494,7 @@ namespace GraphUtilities
                         matchedEdges.Add(e);
                         success = IterateVertex(nextPatternVertex, nextMatchedVertex);
                         if (success == true)
-                        {                            
+                        {
                             result.Edges.Add(patternEdge, e);
                             break;
                         }
@@ -503,7 +503,7 @@ namespace GraphUtilities
                             matchedEdges.Remove(e);
                         }
                     }
-                    if(!success)
+                    if (!success)
                     {
                         visitedPatternEdges.Remove(patternEdge);
                         result.Vertices.Remove(patternVertex);
@@ -529,7 +529,7 @@ namespace GraphUtilities
 
             if (matchResult == null)
                 return false;
-            
+
             // go through all matched vertices to find which ones are to be directly replaced by another
             foreach (var vertexPair in matchResult.Vertices)
             {
@@ -538,7 +538,7 @@ namespace GraphUtilities
 
                 bool mappedDirectly = directMapping.TryGetValue(patternVertex, out Vertex replacementVertex);
 
-                if(!mappedDirectly)
+                if (!mappedDirectly)
                 {
                     RemoveVertex(matchVertex);
                     continue;
@@ -567,7 +567,7 @@ namespace GraphUtilities
                 }
             }
 
-            return true;  
+            return true;
         }
 
         public bool Replace(ReplacementRule rule, bool randomMatch = false)
@@ -613,8 +613,7 @@ namespace GraphUtilities
 
         public class Builder
         {
-            public ReplacementRule Result { get; private set; }
-
+            ReplacementRule Result;
             Vertex currentPatternVertex = null;
             Vertex currentReplacementVertex = null;
             Edge currentPatternEdge = null;
@@ -624,86 +623,185 @@ namespace GraphUtilities
             Dictionary<string, Vertex> taggedPatternVertices;
             Dictionary<string, Vertex> taggedReplacementVertices;
 
+            enum State
+            {
+                Start,
+                PatternVertex,
+                ReplacementVertex,
+                MatchedVertex,
+                PatternEdge,
+                ReplacementEdge,
+                MatchedEdge,
+                End
+            }
+
+            State currentState = State.Start;
+            State lastValidState = State.Start;
+            bool freezeState = false; // state does not get changed if true (hacky, i know)
+
+            static Dictionary<State, State[]> possibleNextStates = new Dictionary<State, State[]>
+            {
+                {
+                    State.Start, new[]
+                    {
+                        State.PatternVertex,
+                        State.ReplacementVertex,
+                        State.MatchedVertex
+                    }
+                },
+                {
+                    State.PatternVertex, new[]
+                    {
+                        State.PatternEdge,
+                        State.End
+                    }
+                },
+                {
+                    State.ReplacementVertex, new[]
+                    {
+                        State.ReplacementEdge,
+                        State.End
+                    }
+                },
+                {
+                    State.MatchedVertex, new[]
+                    {
+                        State.PatternEdge,
+                        State.ReplacementEdge,
+                        State.MatchedEdge,
+                        State.End
+                    }
+                },
+                {
+                    State.PatternEdge, new[]
+                    {
+                        State.PatternVertex
+                    }
+                },
+                {
+                    State.ReplacementEdge, new[]
+                    {
+                        State.ReplacementVertex
+                    }
+                },
+                {
+                    State.MatchedEdge, new[]
+                    {
+                        State.MatchedVertex
+                    }
+                },
+                {
+                    State.End, new State[0]
+                }
+            };
+
             public Builder()
             {
                 Result = new ReplacementRule();
                 taggedPatternVertices = new Dictionary<string, Vertex>();
-                taggedReplacementVertices = new Dictionary<string, Vertex>();
+                taggedReplacementVertices = new Dictionary<string, Vertex>();              
             }
 
-            public Builder PatternVertex(Vertex vertex, string tag = "")
+            public Builder PatternVertex(Vertex vertex, string tag = null)
             {
-                if (mappedVertexNextRequired)
-                    throw new ArgumentException("Mapped Vertex expected, only Pattern recieved!");
+                ChangeState(State.PatternVertex);
+
+                if (vertex == null)
+                    throw new ArgumentNullException("vertex");
 
                 Result.Pattern.AddVertex(vertex);
                 FinalizePatternEdge(vertex);
                 currentPatternVertex = vertex;
 
-                if (tag.Length > 0)
+                if (tag != null)
+                {
                     taggedPatternVertices[tag] = vertex;
+                }
 
                 return this;
             }
 
-            public Builder ReplacementVertex(Vertex vertex, string tag = "")
+            public Builder PatternVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
             {
-                if (mappedVertexNextRequired)
-                    throw new ArgumentException("Mapped Vertex expected, only Replacement recieved!");
+                return PatternVertex(new TVertex(), tag);
+            }
 
-                Result.Replacement.AddVertex(vertex);
+            public Builder PatternVertexWithEdge<TVertex, TEdge>(string tag = null) 
+                where TVertex : Vertex, new() 
+                where TEdge : Edge, new()
+            {
+                PatternEdge<TEdge>();
+                PatternVertex<TVertex>(tag);
+                return this;
+            }
+
+            public Builder ReplacementVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
+            {
+                ChangeState(State.ReplacementVertex);
+
+                var vertex = Result.Replacement.AddVertex(new TVertex());
                 FinalizeReplacementEdge(vertex);
                 currentReplacementVertex = vertex;
 
-                if (tag.Length > 0)
+                if (tag != null)
                     taggedReplacementVertices[tag] = vertex;
 
                 return this;
             }
 
-            public Builder MappedVertex(Vertex patternVetex, string tag = "", Vertex replacementVertex = null)
+            public Builder ReplacementVertexWithEdge<TVertex, TEdge>(string tag = null)
+                where TVertex : Vertex, new()
+                where TEdge : Edge, new()
             {
-                // condition is satisfied
-                mappedVertexNextRequired = false;
+                ReplacementEdge<TEdge>();
+                ReplacementVertex<TVertex>(tag);
+                return this;
+            }
 
-                if (replacementVertex == null)
-                    replacementVertex = patternVetex.Clone();
-
-                PatternVertex(patternVetex, tag);
-                ReplacementVertex(replacementVertex, tag);
+            public Builder MappedVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
+            {
+                ChangeState(State.MatchedVertex);
+                freezeState = true;
+                PatternVertex<TVertex>(tag);
+                ReplacementVertex<TVertex>(tag);
+                freezeState = false;
                 Result.Mapping.Add(currentPatternVertex, currentReplacementVertex);
                 return this;
             }
 
-            public Builder PatternEdge(Edge edge)
+            public Builder MappedVertexWithEdge<TVertex, TEdge>(string tag = null)
+                where TVertex : Vertex, new()
+                where TEdge : Edge, new()
             {
-                if (currentPatternVertex == null)
-                {
-                    throw new ArgumentException("No beginning Vertex for edge!");
-                }
-                currentPatternEdge = edge;
+                MappedEdge<TEdge>();
+                MappedVertex<TVertex>(tag);
                 return this;
             }
 
-            public Builder ReplacementEdge(Edge edge)
+            public Builder PatternEdge<TEdge>() where TEdge : Edge, new()
             {
-                if (currentReplacementVertex == null)
-                {
-                    throw new ArgumentException("No beginning Vertex for edge!");
-                }
-                currentReplacementEdge = edge;
+                ChangeState(State.PatternEdge);
+
+                currentPatternEdge = new TEdge();
                 return this;
             }
 
-            public Builder MappedEdge(Edge patternEdge, Edge replacementEdge = null)
+            public Builder ReplacementEdge<TEdge>() where TEdge : Edge, new()
             {
-                if (replacementEdge == null)
-                    replacementEdge = patternEdge.Clone();
+                ChangeState(State.ReplacementEdge);
 
-                PatternEdge(patternEdge);
-                ReplacementEdge(replacementEdge);
+                currentReplacementEdge = new TEdge();
+                return this;
+            }
+
+            public Builder MappedEdge<TEdge>() where TEdge : Edge, new()
+            {
+                ChangeState(State.MatchedEdge);
+                freezeState = true;
+                PatternEdge<TEdge>();
+                ReplacementEdge<TEdge>();
+                freezeState = false;
                 mappedVertexNextRequired = true;
-
                 return this;
             }
 
@@ -712,28 +810,106 @@ namespace GraphUtilities
                 bool patternTagged = taggedPatternVertices.TryGetValue(tag, out Vertex patternVertex);
                 bool replacementTagged = taggedReplacementVertices.TryGetValue(tag, out Vertex replacementVertex);
 
-                if (currentPatternEdge != null)
+                if(!patternTagged && !replacementTagged)
                 {
-                    if (!patternTagged)
-                    {
-                        throw new ArgumentException(tag + " doesnt tag a patternVertex! -> dangling Edge!");
-                    }
-
-                    FinalizePatternEdge(patternVertex);
-                    currentPatternVertex = patternVertex;
+                    throw new ArgumentException(tag + " doesnt tag a Vertex!");
                 }
 
-                if (currentReplacementEdge != null)
+                // if we have any dangling edges, they MUST be finshed:
+                if(currentPatternEdge != null && !patternTagged)
                 {
-                    if (!replacementTagged)
-                    {
-                        throw new ArgumentException(tag + " doesnt tag a replacementVertex! -> dangling Edge!");
-                    }
+                    throw new ArgumentException(tag + " doesnt tag a patternVertex! -> dangling Edge!");
+                }
+                if(currentReplacementEdge != null && !replacementTagged)
+                {
+                    throw new ArgumentException(tag + " doesnt tag a replacementVertex! -> dangling Edge!");
+                }
 
-                    FinalizeReplacementEdge(replacementVertex);
+                switch (currentState)
+                {
+                    case State.PatternEdge:
+                        FinalizePatternEdge(patternVertex);
+                        break;
+                    case State.ReplacementEdge:
+                        FinalizeReplacementEdge(replacementVertex);
+                        break;
+                    case State.MatchedEdge:
+                        FinalizePatternEdge(patternVertex);
+                        FinalizeReplacementEdge(replacementVertex);
+                        break;
+                    case State.End:
+                        throw new InvalidOperationException("Please call Continue(tag) instead!");
+                    default:
+                        // all other states are fine with just moving to the new vertex
+                        break;
+                }
+               
+                if(patternTagged)
+                {
+                    if(replacementTagged)
+                    {
+                        currentState = State.MatchedVertex;
+                        currentPatternVertex = patternVertex;
+                        currentReplacementVertex = replacementVertex;
+                    }
+                    else
+                    {
+                        currentState = State.PatternVertex;
+                        currentPatternVertex = patternVertex;
+                    }
+                }
+                else if(replacementTagged)
+                {
+                    currentState = State.ReplacementVertex;
                     currentReplacementVertex = replacementVertex;
                 }
 
+                return this;      
+            }
+
+            public ReplacementRule GetResult()
+            {
+                ChangeState(State.End);
+                return Result;
+            }
+
+            public Builder Continue(string tag = null)
+            {
+                if(currentState != State.End)
+                {
+                    throw new InvalidOperationException("Continue() should only be called on a Builder in [End] State!");
+                }
+
+                if(tag == null)
+                {
+                    currentState = lastValidState;
+                }
+                else
+                {
+                    currentState = State.Start;
+                    MoveToTag(tag);
+                }
+
+                return this;
+            }
+
+            public Builder Reset()
+            {
+                if (currentState != State.End)
+                {
+                    throw new InvalidOperationException("Reset() should only be called on a Builder in [End] State! (did you forget to GetResult()?)");
+                }
+
+                Result = new ReplacementRule();
+                currentPatternVertex = null;
+                currentReplacementVertex = null;
+                currentReplacementEdge = null;
+                currentPatternEdge = null;
+                taggedPatternVertices.Clear();
+                taggedReplacementVertices.Clear();
+                freezeState = false;
+                lastValidState = State.Start;
+                currentState = State.Start;
                 return this;
             }
 
@@ -756,7 +932,28 @@ namespace GraphUtilities
                     currentReplacementEdge = null;
                 }
             }
-        }
+        
+            private void ChangeState(State newState)
+            {
+                if(freezeState)
+                {
+                    return;
+                }
 
+                if (possibleNextStates[currentState].Contains(newState))
+                {
+                    currentState = newState;
+                }
+                else
+                {
+                    throw new InvalidOperationException(String.Format("Cannot go from {0} to {1}", currentState.ToString(), newState.ToString()));
+                }
+
+                if (newState == State.End)
+                {
+                    lastValidState = currentState;
+                }
+            }
+        }
     }
 }
