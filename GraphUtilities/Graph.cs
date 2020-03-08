@@ -726,20 +726,11 @@ namespace GraphUtilities
                 return PatternVertex(new TVertex(), tag);
             }
 
-            public Builder PatternVertexWithEdge<TVertex, TEdge>(string tag = null) 
-                where TVertex : Vertex, new() 
-                where TEdge : Edge, new()
-            {
-                PatternEdge<TEdge>();
-                PatternVertex<TVertex>(tag);
-                return this;
-            }
-
-            public Builder ReplacementVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
+            public Builder ReplacementVertex(Vertex vertex, string tag = null)
             {
                 ChangeState(State.ReplacementVertex);
 
-                var vertex = Result.Replacement.AddVertex(new TVertex());
+                Result.Replacement.AddVertex(vertex);
                 FinalizeReplacementEdge(vertex);
                 currentReplacementVertex = vertex;
 
@@ -749,60 +740,67 @@ namespace GraphUtilities
                 return this;
             }
 
-            public Builder ReplacementVertexWithEdge<TVertex, TEdge>(string tag = null)
-                where TVertex : Vertex, new()
-                where TEdge : Edge, new()
+            public Builder ReplacementVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
             {
-                ReplacementEdge<TEdge>();
-                ReplacementVertex<TVertex>(tag);
-                return this;
+                return ReplacementVertex(new TVertex(), tag);
             }
 
-            public Builder MappedVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
+            public Builder MappedVertex<TVertex>(TVertex patternVertex, TVertex replacementVertex, string tag = null) where TVertex : Vertex
             {
                 ChangeState(State.MatchedVertex);
                 freezeState = true;
-                PatternVertex<TVertex>(tag);
-                ReplacementVertex<TVertex>(tag);
+                PatternVertex(patternVertex, tag);
+                ReplacementVertex(replacementVertex, tag);
                 freezeState = false;
                 Result.Mapping.Add(currentPatternVertex, currentReplacementVertex);
                 return this;
             }
 
-            public Builder MappedVertexWithEdge<TVertex, TEdge>(string tag = null)
-                where TVertex : Vertex, new()
-                where TEdge : Edge, new()
+            public Builder MappedVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
             {
-                MappedEdge<TEdge>();
-                MappedVertex<TVertex>(tag);
+                return MappedVertex(new TVertex(), new TVertex(), tag);
+            }
+
+            public Builder PatternEdge(Edge edge)
+            {
+                ChangeState(State.PatternEdge);
+
+                currentPatternEdge = edge;
                 return this;
             }
 
             public Builder PatternEdge<TEdge>() where TEdge : Edge, new()
             {
-                ChangeState(State.PatternEdge);
+                return PatternEdge(new TEdge());
+            }
 
-                currentPatternEdge = new TEdge();
+            public Builder ReplacementEdge(Edge edge)
+            {
+                ChangeState(State.ReplacementEdge);
+
+                currentReplacementEdge = edge;
                 return this;
             }
 
             public Builder ReplacementEdge<TEdge>() where TEdge : Edge, new()
             {
-                ChangeState(State.ReplacementEdge);
+                return ReplacementEdge(new TEdge());
+            }
 
-                currentReplacementEdge = new TEdge();
+            public Builder MappedEdge<TEdge>(TEdge patternEdge, TEdge replacementEdge) where TEdge : Edge
+            {
+                ChangeState(State.MatchedEdge);
+                freezeState = true;
+                PatternEdge(patternEdge);
+                ReplacementEdge(replacementEdge);
+                freezeState = false;
+                mappedVertexNextRequired = true;
                 return this;
             }
 
             public Builder MappedEdge<TEdge>() where TEdge : Edge, new()
             {
-                ChangeState(State.MatchedEdge);
-                freezeState = true;
-                PatternEdge<TEdge>();
-                ReplacementEdge<TEdge>();
-                freezeState = false;
-                mappedVertexNextRequired = true;
-                return this;
+                return MappedEdge(new TEdge(), new TEdge());
             }
 
             public Builder MoveToTag(string tag)
@@ -953,6 +951,57 @@ namespace GraphUtilities
                 {
                     lastValidState = currentState;
                 }
+            }
+
+            public Builder PatternVertexWithEdge(Vertex vertex, Edge edge)
+            {
+                PatternEdge(edge);
+                PatternVertex(vertex);
+                return this;
+            }
+
+            public Builder PatternVertexWithEdge<TVertex, TEdge>(string tag = null)
+                where TVertex : Vertex, new()
+                where TEdge : Edge, new()
+            {
+                PatternEdge<TEdge>();
+                PatternVertex<TVertex>(tag);
+                return this;
+            }
+
+            public Builder ReplacementVertexWithEdge(Vertex vertex, Edge edge)
+            {
+                ReplacementEdge(edge);
+                ReplacementVertex(vertex);
+                return this;
+            }
+
+            public Builder ReplacementVertexWithEdge<TVertex, TEdge>(string tag = null)
+                where TVertex : Vertex, new()
+                where TEdge : Edge, new()
+            {
+                ReplacementEdge<TEdge>();
+                ReplacementVertex<TVertex>(tag);
+                return this;
+            }
+
+            public Builder MappedVertexWithEdge<TVertex, TEdge>(TVertex patternVertex, TVertex replacementVertex,
+                TEdge patternEdge, TEdge replacementEdge, string tag = null) 
+                where TVertex : Vertex 
+                where TEdge : Edge
+            {
+                MappedEdge(patternEdge, replacementEdge);
+                MappedVertex(patternVertex, replacementVertex, tag);
+                return this;
+            }
+
+            public Builder MappedVertexWithEdge<TVertex, TEdge>(string tag = null)
+                where TVertex : Vertex, new()
+                where TEdge : Edge, new()
+            {
+                MappedEdge<TEdge>();
+                MappedVertex<TVertex>(tag);
+                return this;
             }
         }
     }
