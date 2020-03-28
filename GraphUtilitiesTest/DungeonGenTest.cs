@@ -35,7 +35,7 @@ namespace GraphUtilitiesTest
 
             for (int i = 0; i < 2; i++)
             {
-                var builder = new ReplacementRule.Builder();
+                var builder = new ReplacementRuleBuilder();
 
                 builder.MappedVertex<REssential>("loop")
                     .MappedVertexWithEdge<REssential, Edge>()
