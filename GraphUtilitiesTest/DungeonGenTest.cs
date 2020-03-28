@@ -45,9 +45,14 @@ namespace GraphUtilitiesTest
                     .ReplacementEdge<Edge>()
                     .MoveToTag("loop");
 
-                bool success = Dungeon.Replace(builder.GetResult(), randomMatch: true);
+                ReplacementRule addShortcut = builder.GetResult();
 
-             
+                Assert.IsTrue(addShortcut.Pattern.Vertices.Count == 4);
+                Assert.IsTrue(addShortcut.Mapping.Count == 4);
+                Assert.IsTrue(addShortcut.Replacement.Vertices.Count == 5);
+
+                bool success = Dungeon.Replace(addShortcut, randomMatch: true);
+                Assert.IsTrue(success);
             }
 
             var bossTreasure = new ReplacementRule();
@@ -65,8 +70,12 @@ namespace GraphUtilitiesTest
             bossTreasure.Replacement.AddEdge(new Edge(boss, treasure));
             bossTreasure.Mapping[anchorP] = anchorR;
 
-            //Dungeon.Replace(bossTreasure.Pattern, bossTreasure.Replacement, bossTreasure.Mapping, true);
+            Assert.IsTrue(bossTreasure.Pattern.Vertices.Count == 1);
+            Assert.IsTrue(bossTreasure.Mapping.Count == 1);
+            Assert.IsTrue(bossTreasure.Replacement.Vertices.Count == 3);
 
+            bool success2 = Dungeon.Replace(bossTreasure, randomMatch: true);
+            Assert.IsTrue(success2);
 
             File.WriteAllText("dungeon.gv", GraphPrinter.ToDot(Dungeon));
         }

@@ -59,6 +59,13 @@ namespace GraphUtilitiesTest
 
             graph.Replace(pattern, replacement, mapping, true);
 
+            Assert.IsTrue(graph.Vertices.Count == 4);
+            Assert.IsTrue(graph.Vertices.TrueForAll(v => v.Edges.Count == 2));
+
+            Assert.IsTrue(graph.Vertices.Contains(vr1));
+            Assert.IsTrue(graph.Vertices.Contains(vr2));
+            Assert.IsTrue(graph.Vertices.Contains(vr3));
+
             string afterReplaceString = GraphPrinter.ToDot(graph);
 
             File.WriteAllText("before.gv", initialGraphString);
