@@ -570,6 +570,12 @@ namespace GraphUtilities
             return true;
         }
 
+        /// <summary>
+        /// finds a pattern in the graph and replaces it with another graph according to the rule
+        /// </summary>
+        /// <param name="rule">Rule by which to replace</param>
+        /// <param name="randomMatch">set true to find pattern randomly in graph</param>
+        /// <returns>true on success; false otherwise</returns>
         public bool Replace(ReplacementRule rule, bool randomMatch = false)
         {
             return Replace(rule.Pattern, rule.Replacement, rule.Mapping, randomMatch);

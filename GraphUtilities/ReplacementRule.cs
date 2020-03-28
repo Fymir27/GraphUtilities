@@ -5,6 +5,11 @@ using System.Text;
 
 namespace GraphUtilities
 {
+    /// <summary>
+    /// A rule by which to replace a subgraph defined by "Pattern"
+    /// with a "Replacement" graph with the mapping between them beeing
+    /// defined by "Mapping
+    /// </summary>
     public class ReplacementRule
     {
         public Graph Pattern = new Graph();
@@ -12,8 +17,15 @@ namespace GraphUtilities
         public Dictionary<Vertex, Vertex> Mapping = new Dictionary<Vertex, Vertex>();
     }
 
+    /// <summary>
+    /// Class that provides a fluent interface for creating a ReplacementRule
+    /// </summary>
     public class ReplacementRuleBuilder
     {
+        /// <summary>
+        /// possible states of the builders 
+        /// internal state machine
+        /// </summary>
         enum State
         {
             Start,
@@ -100,14 +112,25 @@ namespace GraphUtilities
             };
         #endregion
 
+        /// <summary>
+        /// basic constructor - initializes attributes and state
+        /// </summary>
         public ReplacementRuleBuilder()
         {
+            currentState = State.Start;
             Result = new ReplacementRule();
             taggedPatternVertices = new Dictionary<string, Vertex>();
             taggedReplacementVertices = new Dictionary<string, Vertex>();
         }
 
-        #region basic builder methods
+        #region basic vertex adding methods
+        /// <summary>
+        /// Adds a pattern vertex to the rule 
+        /// and finishes the current uncomplete pattern edge 
+        /// </summary>
+        /// <param name="vertex">pattern vertex to add</param>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternVertex(Vertex vertex, string tag = null)
         {
             ChangeState(State.PatternVertex);
@@ -127,11 +150,25 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a pattern vertex to the rule 
+        /// and finishes the current uncomplete pattern edge 
+        /// </summary>
+        /// <typeparam name="TVertex">type of pattern vertex to create</typeparam>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
         {
             return PatternVertex(new TVertex(), tag);
         }
 
+        /// <summary>
+        /// Adds a replacement vertex to the rule 
+        /// and finishes the current uncomplete replacement edge 
+        /// </summary>
+        /// <param name="vertex">replacement vertex to add</param>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementVertex(Vertex vertex, string tag = null)
         {
             ChangeState(State.ReplacementVertex);
@@ -146,11 +183,26 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a replacement vertex to the rule 
+        /// and finishes the current uncomplete replacement edge 
+        /// </summary>
+        /// <typeparam name="TVertex">type of replacement vertex to create</typeparam>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
         {
             return ReplacementVertex(new TVertex(), tag);
         }
 
+        /// <summary>
+        /// Adds a pattern and replacement vertex to the rule, maps one to the other
+        /// and finishes the current uncomplete pattern and replacement edge 
+        /// </summary>
+        /// <param name="patternVertex">pattern vertex to add</param>
+        /// <param name="replacementVertex">replacement vertex to add</param>
+        /// <param name="tag">string to identify the vertices later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedVertex<TVertex>(TVertex patternVertex, TVertex replacementVertex, string tag = null) where TVertex : Vertex
         {
             ChangeState(State.MatchedVertex);
@@ -162,11 +214,20 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a pattern and replacement vertex to the rule, maps one to the other
+        /// and finishes the current uncomplete pattern and replacement edge 
+        /// </summary>
+        /// <typeparam name="TVertex">type of pattern/replacement vertex to create</typeparam>
+        /// <param name="tag">string to identify the vertices later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedVertex<TVertex>(string tag = null) where TVertex : Vertex, new()
         {
             return MappedVertex(new TVertex(), new TVertex(), tag);
         }
+        #endregion
 
+        #region basic edge adding methods
         public ReplacementRuleBuilder PatternEdge(Edge edge)
         {
             ChangeState(State.PatternEdge);
@@ -208,6 +269,7 @@ namespace GraphUtilities
         {
             return MappedEdge(new TEdge(), new TEdge());
         }
+        #endregion
 
         public ReplacementRuleBuilder MoveToTag(string tag)
         {
@@ -316,7 +378,6 @@ namespace GraphUtilities
             currentState = State.Start;
             return this;
         }
-        #endregion
 
         #region shortcut methods
         public ReplacementRuleBuilder PatternVertexWithEdge(Vertex vertex, Edge edge)
