@@ -430,6 +430,13 @@ namespace GraphUtilities
         }
 
         #region shortcut methods
+        /// <summary>
+        /// adds a pattern vertex and immediately attaches an edge to it
+        /// </summary>
+        /// <param name="vertex">vertex to add</param>
+        /// <param name="edge">edge to add</param>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternVertexWithEdge(Vertex vertex, Edge edge, string tag = null)
         {
             PatternEdge(edge);
@@ -437,6 +444,13 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// adds a pattern vertex and immediately attaches an edge to it
+        /// </summary>
+        /// <typeparam name="TVertex">type of vertex to add</typeparam>
+        /// <typeparam name="TEdge">type of edge to add</typeparam>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternVertexWithEdge<TVertex, TEdge>(string tag = null)
             where TVertex : Vertex, new()
             where TEdge : Edge, new()
@@ -446,6 +460,13 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// adds a replacment vertex and immediately attaches an edge to it
+        /// </summary>
+        /// <param name="vertex">vertex to add</param>
+        /// <param name="edge">edge to add</param>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementVertexWithEdge(Vertex vertex, Edge edge, string tag = null)
         {
             ReplacementEdge(edge);
@@ -453,6 +474,13 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// adds a replacment vertex and immediately attaches an edge to it
+        /// </summary>
+        /// <typeparam name="TVertex">type of vertex to add</typeparam>
+        /// <typeparam name="TEdge">type of edge to add</typeparam>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementVertexWithEdge<TVertex, TEdge>(string tag = null)
             where TVertex : Vertex, new()
             where TEdge : Edge, new()
@@ -462,6 +490,19 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a pattern and replacement vertex to the rule, maps one to the other
+        /// and finishes the current uncomplete pattern and replacement edge before
+        /// attaching a new edge to each added vertex
+        /// </summary>
+        /// <typeparam name="TVertex">type of vertex (implicit)</typeparam>
+        /// <typeparam name="TEdge">type of edge (implicit)</typeparam>
+        /// <param name="patternVertex">pattern vertex to add</param>
+        /// <param name="replacementVertex">replacement vertex to add</param>
+        /// <param name="patternEdge">edge to add to pattern vertex</param>
+        /// <param name="replacementEdge">edge to add to replacment vertex</param>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedVertexWithEdge<TVertex, TEdge>(TVertex patternVertex, TVertex replacementVertex,
             TEdge patternEdge, TEdge replacementEdge, string tag = null)
             where TVertex : Vertex
@@ -472,6 +513,15 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a pattern and replacement vertex to the rule, maps one to the other
+        /// and finishes the current uncomplete pattern and replacement edge before
+        /// attaching a new edge to each added vertex
+        /// </summary>
+        /// <typeparam name="TVertex">type of vertices to add</typeparam>
+        /// <typeparam name="TEdge">type of edges to add</typeparam>
+        /// <param name="tag">string to identify vertex later</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedVertexWithEdge<TVertex, TEdge>(string tag = null)
             where TVertex : Vertex, new()
             where TEdge : Edge, new()
