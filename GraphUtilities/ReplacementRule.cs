@@ -228,6 +228,11 @@ namespace GraphUtilities
         #endregion
 
         #region basic edge adding methods
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added pattern vertex  
+        /// </summary>
+        /// <param name="edge">edge to add</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternEdge(Edge edge)
         {
             ChangeState(State.PatternEdge);
@@ -236,11 +241,21 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added pattern vertex  
+        /// </summary>
+        /// <typeparam name="TEdge">type of edge to add</typeparam>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder PatternEdge<TEdge>() where TEdge : Edge, new()
         {
             return PatternEdge(new TEdge());
         }
 
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added replacement vertex  
+        /// </summary>
+        /// <param name="edge">edge to add</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementEdge(Edge edge)
         {
             ChangeState(State.ReplacementEdge);
@@ -249,11 +264,23 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added replacement vertex  
+        /// </summary>
+        /// <typeparam name="TEdge">type of edge to add</typeparam>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder ReplacementEdge<TEdge>() where TEdge : Edge, new()
         {
             return ReplacementEdge(new TEdge());
         }
 
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added pattern AND replacement (=mapped) vertex  
+        /// </summary>
+        /// <typeparam name="TEdge">type of edges to add (should be implicit)</typeparam>
+        /// <param name="patternEdge">edge to add to param vertex</param>
+        /// <param name="replacementEdge">edge to add to replacement vertex</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedEdge<TEdge>(TEdge patternEdge, TEdge replacementEdge) where TEdge : Edge
         {
             ChangeState(State.MatchedEdge);
@@ -265,6 +292,11 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// Adds a new (incomplete) edge to the last added pattern AND replacement (=mapped) vertex  
+        /// </summary>
+        /// <typeparam name="TEdge">type of edges to add</typeparam>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedEdge<TEdge>() where TEdge : Edge, new()
         {
             return MappedEdge(new TEdge(), new TEdge());
