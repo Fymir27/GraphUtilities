@@ -613,7 +613,7 @@ namespace GraphUtilities
                 throw new InvalidOperationException(String.Format("Cannot go from {0} to {1}", currentState.ToString(), newState.ToString()));
             }
 
-            if (newState == State.End)
+            if (currentState != State.End)
             {
                 lastValidState = currentState;
             }
