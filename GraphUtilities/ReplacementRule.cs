@@ -39,22 +39,59 @@ namespace GraphUtilities
         }
 
         #region attributes
+        /// <summary>
+        /// internal instance of ReplacementRule that is beeing built
+        /// </summary>
         ReplacementRule Result;
-        Vertex currentPatternVertex = null;
-        Vertex currentReplacementVertex = null;
-        Edge currentPatternEdge = null;
-        Edge currentReplacementEdge = null;
-        bool mappedVertexNextRequired = false;
 
+        /// <summary>
+        /// last added pattern vertex
+        /// </summary>
+        Vertex currentPatternVertex = null;
+
+        /// <summary>
+        /// last added replacement vertex
+        /// </summary>
+        Vertex currentReplacementVertex = null;
+
+        /// <summary>
+        /// current uncompleted pattern edge
+        /// </summary>
+        Edge currentPatternEdge = null;
+
+        /// <summary>
+        /// current uncompleted replacement edge
+        /// </summary>
+        Edge currentReplacementEdge = null;
+
+        /// <summary>
+        /// maps tags to corresponding pattern vertices
+        /// </summary>
         Dictionary<string, Vertex> taggedPatternVertices;
+
+        /// <summary>
+        /// maps tags to corresponding replacement vertices
+        /// </summary>
         Dictionary<string, Vertex> taggedReplacementVertices;
 
-       
-
+        /// <summary>
+        /// current internal state
+        /// </summary>
         State currentState = State.Start;
-        State lastValidState = State.Start;
-        bool freezeState = false; // state does not get changed if true (hacky, i know)
 
+        /// <summary>
+        /// last valid state (before State.End was reached)
+        /// </summary>
+        State lastValidState = State.Start;
+
+        /// <summary>
+        /// if true state does not get changed by ChangeState()
+        /// </summary>
+        bool freezeState = false;
+
+        /// <summary>
+        /// maps a state to possible next states
+        /// </summary>
         static Dictionary<State, State[]> possibleNextStates = new Dictionary<State, State[]>
             {
                 {
@@ -288,7 +325,6 @@ namespace GraphUtilities
             PatternEdge(patternEdge);
             ReplacementEdge(replacementEdge);
             freezeState = false;
-            mappedVertexNextRequired = true;
             return this;
         }
 
@@ -533,6 +569,10 @@ namespace GraphUtilities
         #endregion
 
         #region private methods
+        /// <summary>
+        /// finalizes current uncompleted pattern edge
+        /// </summary>
+        /// <param name="vertex">vertex to complete edge with</param>
         private void FinalizePatternEdge(Vertex vertex)
         {
             if (currentPatternEdge != null)
@@ -543,6 +583,10 @@ namespace GraphUtilities
             }
         }
 
+        /// <summary>
+        /// finalizes current uncompleted replacment edge
+        /// </summary>
+        /// <param name="vertex">vertex to complete edge with</param>
         private void FinalizeReplacementEdge(Vertex vertex)
         {
             if (currentReplacementEdge != null)
@@ -553,6 +597,10 @@ namespace GraphUtilities
             }
         }
 
+        /// <summary>
+        /// Changes internal state to a new one
+        /// </summary>
+        /// <param name="newState">new stat to change to</param>
         private void ChangeState(State newState)
         {
             if (freezeState)
