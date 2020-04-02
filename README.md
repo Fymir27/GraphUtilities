@@ -9,7 +9,7 @@ Option 1:
 Build the .dll yourself by opening the VisualStudio solution (GraphUtilities.sln) and building it (F7)
 
 Option 2:
-Copy GraphUtilities/Graph.cs into your project (it's just one file)
+Copy needed files into your project
 
 ## Developing
 
@@ -25,7 +25,16 @@ The class **Graph** represents an UNDIRECTED mathematical graph consisting of ve
   * Does not yet support vertices having an edge to themselves (no loops!)
   * Provides functionality to find a pattern (subgraph) in a graph
 
+The classes **ReplacementRule** and **ReplacementRuleBuilder** provide functionality to find and replace subgraphs
+  * defined by a pattern graph that gets matched in the host graph and then replaced by a replacement graph
+  * mapping of vertices from pattern to replacement graph
+  * fluent interface for comfortable usage
+
 GraphUtilitiesTest provides **light** unit testing
+
+## Known Limitations/Bugs
+
+* Still not really possible to remove edges easily, since both pattern and replacement graph need to be connected
 
 ## Licensing
 
