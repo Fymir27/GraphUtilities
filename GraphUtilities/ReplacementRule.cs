@@ -430,10 +430,10 @@ namespace GraphUtilities
         }
 
         #region shortcut methods
-        public ReplacementRuleBuilder PatternVertexWithEdge(Vertex vertex, Edge edge)
+        public ReplacementRuleBuilder PatternVertexWithEdge(Vertex vertex, Edge edge, string tag = null)
         {
             PatternEdge(edge);
-            PatternVertex(vertex);
+            PatternVertex(vertex, tag);
             return this;
         }
 
@@ -446,10 +446,10 @@ namespace GraphUtilities
             return this;
         }
 
-        public ReplacementRuleBuilder ReplacementVertexWithEdge(Vertex vertex, Edge edge)
+        public ReplacementRuleBuilder ReplacementVertexWithEdge(Vertex vertex, Edge edge, string tag = null)
         {
             ReplacementEdge(edge);
-            ReplacementVertex(vertex);
+            ReplacementVertex(vertex, tag);
             return this;
         }
 
