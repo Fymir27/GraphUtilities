@@ -303,6 +303,11 @@ namespace GraphUtilities
         }
         #endregion
 
+        /// <summary>
+        /// moves the builders state to the vertex with a specific tag (if mapped: the vertices)
+        /// </summary>
+        /// <param name="tag">tag of the vertex/vertices to move to</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MoveToTag(string tag)
         {
             bool patternTagged = taggedPatternVertices.TryGetValue(tag, out Vertex patternVertex);
@@ -365,12 +370,21 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// finalizes the building of the rule and returns it
+        /// </summary>
+        /// <returns>ReplacementRule that was built</returns>
         public ReplacementRule GetResult()
         {
             ChangeState(State.End);
             return Result;
         }
 
+        /// <summary>
+        /// allows the builder to continue after it has already finished by calling GetResult() (USE WITH CAUTION)
+        /// </summary>
+        /// <param name="tag">tag to continue from</param>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder Continue(string tag = null)
         {
             if (currentState != State.End)
@@ -391,6 +405,10 @@ namespace GraphUtilities
             return this;
         }
 
+        /// <summary>
+        /// allows reuse of builder instance by starting a new empty ReplacementRule
+        /// </summary>
+        /// <returns>builder instance</returns>
         public ReplacementRuleBuilder Reset()
         {
             if (currentState != State.End)
