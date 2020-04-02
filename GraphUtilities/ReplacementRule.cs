@@ -467,7 +467,7 @@ namespace GraphUtilities
 
         #region shortcut methods
         /// <summary>
-        /// adds a pattern vertex and immediately attaches an edge to it
+        /// starts a new pattern edge and finishes it with a pattern vertex
         /// </summary>
         /// <param name="vertex">vertex to add</param>
         /// <param name="edge">edge to add</param>
@@ -481,7 +481,7 @@ namespace GraphUtilities
         }
 
         /// <summary>
-        /// adds a pattern vertex and immediately attaches an edge to it
+        /// starts a new pattern edge and finishes it with a pattern vertex
         /// </summary>
         /// <typeparam name="TVertex">type of vertex to add</typeparam>
         /// <typeparam name="TEdge">type of edge to add</typeparam>
@@ -497,7 +497,7 @@ namespace GraphUtilities
         }
 
         /// <summary>
-        /// adds a replacment vertex and immediately attaches an edge to it
+        /// starts a new replacement edge and finishes it with a replacement vertex
         /// </summary>
         /// <param name="vertex">vertex to add</param>
         /// <param name="edge">edge to add</param>
@@ -511,7 +511,7 @@ namespace GraphUtilities
         }
 
         /// <summary>
-        /// adds a replacment vertex and immediately attaches an edge to it
+        /// starts a new replacement edge and finishes it with a replacement vertex
         /// </summary>
         /// <typeparam name="TVertex">type of vertex to add</typeparam>
         /// <typeparam name="TEdge">type of edge to add</typeparam>
@@ -527,9 +527,7 @@ namespace GraphUtilities
         }
 
         /// <summary>
-        /// Adds a pattern and replacement vertex to the rule, maps one to the other
-        /// and finishes the current uncomplete pattern and replacement edge before
-        /// attaching a new edge to each added vertex
+        /// Starts a pattern and a replacment edge and finishes them with a pattern and replacement vertex
         /// </summary>
         /// <typeparam name="TVertex">type of vertex (implicit)</typeparam>
         /// <typeparam name="TEdge">type of edge (implicit)</typeparam>
@@ -550,9 +548,7 @@ namespace GraphUtilities
         }
 
         /// <summary>
-        /// Adds a pattern and replacement vertex to the rule, maps one to the other
-        /// and finishes the current uncomplete pattern and replacement edge before
-        /// attaching a new edge to each added vertex
+        /// Starts a pattern and a replacment edge and finishes them with a pattern and replacement vertex
         /// </summary>
         /// <typeparam name="TVertex">type of vertices to add</typeparam>
         /// <typeparam name="TEdge">type of edges to add</typeparam>
