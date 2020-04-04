@@ -31,10 +31,10 @@ namespace GraphUtilities
             Start,
             PatternVertex,
             ReplacementVertex,
-            MatchedVertex,
+            MappedVertex,
             PatternEdge,
             ReplacementEdge,
-            MatchedEdge,
+            MappedEdge,
             End
         }
 
@@ -99,7 +99,7 @@ namespace GraphUtilities
                     {
                         State.PatternVertex,
                         State.ReplacementVertex,
-                        State.MatchedVertex
+                        State.MappedVertex
                     }
                 },
                 {
@@ -117,11 +117,11 @@ namespace GraphUtilities
                     }
                 },
                 {
-                    State.MatchedVertex, new[]
+                    State.MappedVertex, new[]
                     {
                         State.PatternEdge,
                         State.ReplacementEdge,
-                        State.MatchedEdge,
+                        State.MappedEdge,
                         State.End
                     }
                 },
@@ -138,9 +138,9 @@ namespace GraphUtilities
                     }
                 },
                 {
-                    State.MatchedEdge, new[]
+                    State.MappedEdge, new[]
                     {
-                        State.MatchedVertex
+                        State.MappedVertex
                     }
                 },
                 {
@@ -242,7 +242,7 @@ namespace GraphUtilities
         /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedVertex<TVertex>(TVertex patternVertex, TVertex replacementVertex, string tag = null) where TVertex : Vertex
         {
-            ChangeState(State.MatchedVertex);
+            ChangeState(State.MappedVertex);
             freezeState = true;
             PatternVertex(patternVertex, tag);
             ReplacementVertex(replacementVertex, tag);
@@ -320,7 +320,7 @@ namespace GraphUtilities
         /// <returns>builder instance</returns>
         public ReplacementRuleBuilder MappedEdge<TEdge>(TEdge patternEdge, TEdge replacementEdge) where TEdge : Edge
         {
-            ChangeState(State.MatchedEdge);
+            ChangeState(State.MappedEdge);
             freezeState = true;
             PatternEdge(patternEdge);
             ReplacementEdge(replacementEdge);
@@ -372,7 +372,7 @@ namespace GraphUtilities
                 case State.ReplacementEdge:
                     FinalizeReplacementEdge(replacementVertex);
                     break;
-                case State.MatchedEdge:
+                case State.MappedEdge:
                     FinalizePatternEdge(patternVertex);
                     FinalizeReplacementEdge(replacementVertex);
                     break;
@@ -387,7 +387,7 @@ namespace GraphUtilities
             {
                 if (replacementTagged)
                 {
-                    currentState = State.MatchedVertex;
+                    currentState = State.MappedVertex;
                     currentPatternVertex = patternVertex;
                     currentReplacementVertex = replacementVertex;
                 }
@@ -403,6 +403,46 @@ namespace GraphUtilities
                 currentReplacementVertex = replacementVertex;
             }
 
+            return this;
+        }
+
+        /// <summary>
+        /// maps the last added vertex to the vertex tagged by "tag" and also tags it.
+        /// works only if last operation was adding a single (pattern/replacement) vertex 
+        /// and the tag refers to the other type (pattern/replacement) of vertex
+        /// </summary>
+        /// <param name="tag">tag of vertex to map to</param>
+        /// <returns>builder instance</returns>
+        public ReplacementRuleBuilder MapToTag(string tag)
+        {
+            taggedPatternVertices.TryGetValue(tag, out Vertex patternVertex);
+            taggedReplacementVertices.TryGetValue(tag, out Vertex replacementVertex);
+
+            switch(currentState)
+            {
+                case State.PatternVertex:
+                    if(replacementVertex == null)
+                    {
+                        throw new ArgumentException("No vertex to map to with that tag!", "tag");
+                    }
+                    Result.Mapping.Add(currentPatternVertex, replacementVertex);
+                    taggedPatternVertices.Add(tag, currentPatternVertex);
+                    break;
+
+                case State.ReplacementVertex:
+                    if (patternVertex == null)
+                    {
+                        throw new ArgumentException("No vertex to map to with that tag!", "tag");
+                    }
+                    Result.Mapping.Add(currentReplacementVertex, patternVertex);
+                    taggedReplacementVertices.Add(tag, currentReplacementVertex);
+                    break;
+
+                default:
+                    throw new InvalidOperationException("You can only do that right after adding a pattern or replacement vertex!");
+            }
+
+            currentState = State.MappedVertex;
             return this;
         }
 
