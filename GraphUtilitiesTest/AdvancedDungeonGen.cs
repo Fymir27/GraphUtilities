@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using GraphUtilities;
 using System.IO;
+using System.Linq;
 
 namespace GraphUtilitiesTest
 {
@@ -45,17 +46,24 @@ namespace GraphUtilitiesTest
     [TestClass]
     public class AdvancedDungeonGen
     {
-        Random rnd = new Random((int)System.DateTime.Now.Ticks);
+        Random rnd;
+        int seed = 0; //1948689677;
 
         [TestMethod]
         public void Start()
         {
+            if(seed == 0)
+                seed = (int)System.DateTime.Now.Ticks;
+
+            Console.WriteLine("Seed: " + seed);
+            rnd = new Random(seed);
+
             var builder = new ReplacementRuleBuilder();
 
             builder.MappedVertex<StartingRoom>("start")
-                .ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("start")
-                .ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("start")
-                .ReplacementVertexWithEdge<BasicRoom, Edge>();
+                .ReplacementVertexWithEdge<BasicRoom, Edge>().ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("start")
+                .ReplacementVertexWithEdge<BasicRoom, Edge>().ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("start")
+                .ReplacementVertexWithEdge<BasicRoom, Edge>().ReplacementVertexWithEdge<BasicRoom, Edge>();
 
             var initialRule = builder.GetResult();
 
@@ -65,28 +73,84 @@ namespace GraphUtilitiesTest
 
             for (int i = 0; i < 15; i++)
             {
-                var b = new BasicRoom();
-                var b_ = new BasicRoom();
+                builder.Reset()
+                    .MappedVertex<BasicRoom>("a")
+                    .PatternVertexWithEdge<BasicRoom, Edge>("b")
+                    .MoveToTag("a").ReplacementVertexWithEdge<Junction, Edge>("j")
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("j")
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MapToTag("b");
+
+                var addJunction = builder.GetResult();
 
                 builder.Reset()
                     .MappedVertex<BasicRoom>("a")
-                    .PatternVertexWithEdge(b, new Edge())
-                    .MoveToTag("a").ReplacementVertexWithEdge<Junction, Edge>("j")
-                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MoveToTag("j")
-                    .ReplacementVertexWithEdge(b_, new Edge());
+                    .PatternVertexWithEdge<BasicRoom, Edge>("b").MoveToTag("a")
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>()
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MapToTag("b");
 
-                var addJunction = builder.GetResult();
-                addJunction.Mapping.Add(b, b_);
+                var stretch = builder.GetResult();
+
+                builder.Reset()
+                    .MappedVertex<BasicRoom>("a")
+                    .PatternVertexWithEdge<Junction, Edge>("j")
+                    .PatternVertexWithEdge<BasicRoom, Edge>("b").MoveToTag("j")
+                    .PatternVertexWithEdge<BasicRoom, Edge>("c").MoveToTag("a")
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MapToTag("b")
+                    .ReplacementVertexWithEdge<BasicRoom, Edge>().MapToTag("c")
+                    .ReplacementEdge<Edge>().MoveToTag("a");
+
+                var transformJunction = builder.GetResult();
+
+                builder.Reset()
+                    .MappedVertex<BasicRoom>("a")
+                    .MappedVertexWithEdge<BasicRoom, Edge>()
+                    .MappedVertexWithEdge<BasicRoom, Edge>()
+                    .MappedVertexWithEdge<BasicRoom, Edge>()
+                    .ReplacementEdge<Edge>().MoveToTag("a");
+
+                var createLoop = builder.GetResult();
 
                 builder.Reset()
                     .MappedVertex<BasicRoom>()
                     .ReplacementVertexWithEdge<BasicRoom, Edge>();
 
-                var stretch = builder.GetResult();
+                var addRoom = builder.GetResult();
 
-                ReplacementRule[] rules = { addJunction, stretch };
-                int ruleIndex = rnd.Next(rules.Length);
-                dungeon.Replace(rules[ruleIndex], true);
+                var rules = new Tuple<ReplacementRule, int>[] 
+                {
+                    Tuple.Create(addJunction, 3),
+                    Tuple.Create(stretch, 2),
+                    Tuple.Create(createLoop, 2),
+                    Tuple.Create(transformJunction, 1)
+                };
+
+                int acc = 0;
+                int[] absoluteDistribution = rules.Select(t => acc += t.Item2).ToArray();
+
+                int endurance = 10;
+                int ruleIndex;
+                bool ruleSuccess;
+
+                do
+                {
+                    if (endurance-- == 0)
+                    {
+                        dungeon.Replace(addRoom, true);
+                        break;
+                    }
+
+                    int r = rnd.Next(acc);
+
+                    for (ruleIndex = 0; ruleIndex < rules.Length; ruleIndex++)
+                    {
+                        if(r < absoluteDistribution[ruleIndex])
+                        {
+                            break;
+                        }
+                    }
+
+                    ruleSuccess = dungeon.Replace(rules[ruleIndex].Item1, true);
+                } while (!ruleSuccess);
             }
 
             File.WriteAllText("advancedDungeon.gv", GraphPrinter.ToDot(dungeon));

@@ -440,13 +440,16 @@ namespace GraphUtilities
 
                 if (!result.Vertices.ContainsKey(patternVertex))
                 {
+                    if (result.Vertices.Values.Contains(matchVertex))
+                        return false;
+
                     result.Vertices.Add(patternVertex, matchVertex);
                 }
                 else if (result.Vertices[patternVertex] != matchVertex)
                 {
                     return false;
                 }
-
+                
                 var unvisitedPatternEdges = patternVertex.Edges
                     .Where(e => !visitedPatternEdges.Contains(e));
 

@@ -216,5 +216,42 @@ namespace GraphUtilitiesTest
             pattern.AddEdge(ef2);
             Assert.IsNull(graph.FindPattern(pattern));
         }
+
+        [TestMethod]
+        public void Test4()
+        {
+            var graph = new Graph();
+
+            var v1 = new Vertex();
+            graph.AddVertex(v1);
+            var v2 = new Vertex();
+            graph.AddVertex(v2);
+            var v3 = new Vertex();
+            graph.AddVertex(v3);
+
+            var e1 = new Edge(v1, v2);
+            graph.AddEdge(e1);
+            var e2 = new Edge(v2, v3);
+            graph.AddEdge(e2);
+            var e3 = new Edge(v1, v3);
+          
+
+            var pattern = new Graph();
+            var pv1 = new Vertex();
+            var pv2 = new Vertex();
+            var pv3 = new Vertex();
+            var pv4 = new Vertex();
+            pattern.AddVertex(pv1);
+            pattern.AddVertex(pv2);
+            pattern.AddVertex(pv3);
+            pattern.AddVertex(pv4);
+
+            pattern.AddEdge(new Edge(pv1, pv2));
+            pattern.AddEdge(new Edge(pv2, pv3));
+            pattern.AddEdge(new Edge(pv3, pv4));
+
+            MatchResult result = graph.FindPattern(pattern);
+            Assert.IsNull(result);
+        }
     }
 }

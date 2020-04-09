@@ -425,6 +425,10 @@ namespace GraphUtilities
                     {
                         throw new ArgumentException("No vertex to map to with that tag!", "tag");
                     }
+                    if(!currentPatternVertex.SameType(replacementVertex))
+                    {
+                        throw new ArgumentException("Can't map two vertices of different type!");
+                    }
                     Result.Mapping.Add(currentPatternVertex, replacementVertex);
                     taggedPatternVertices.Add(tag, currentPatternVertex);
                     break;
@@ -434,7 +438,11 @@ namespace GraphUtilities
                     {
                         throw new ArgumentException("No vertex to map to with that tag!", "tag");
                     }
-                    Result.Mapping.Add(currentReplacementVertex, patternVertex);
+                    if (!currentReplacementVertex.SameType(patternVertex))
+                    {
+                        throw new ArgumentException("Can't map two vertices of different type!");
+                    }
+                    Result.Mapping.Add(patternVertex, currentReplacementVertex);
                     taggedReplacementVertices.Add(tag, currentReplacementVertex);
                     break;
 
