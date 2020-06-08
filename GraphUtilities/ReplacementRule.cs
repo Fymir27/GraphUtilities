@@ -495,6 +495,12 @@ namespace GraphUtilities
         /// <returns>builder instance</returns>
         public ReplacementRuleBuilder Reset()
         {
+            // already good to go!
+            if(currentState == State.Start)
+            {
+                return this;
+            }
+
             if (currentState != State.End)
             {
                 throw new InvalidOperationException("Reset() should only be called on a Builder in [End] State! (did you forget to GetResult()?)");
