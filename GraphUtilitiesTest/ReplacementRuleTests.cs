@@ -16,7 +16,6 @@ namespace GraphUtilitiesTest
             // invalid operations in "start" state
             Assert.ThrowsException<InvalidOperationException>(() => builder.GetResult());
             Assert.ThrowsException<InvalidOperationException>(() => builder.Continue());
-            Assert.ThrowsException<InvalidOperationException>(() => builder.Reset());
 
             builder.MappedVertex<Vertex>("test");
        
