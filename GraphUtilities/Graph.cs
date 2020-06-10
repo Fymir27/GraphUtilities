@@ -459,7 +459,7 @@ namespace GraphUtilities
 
                 if (randomMatch)
                 {
-                    Shuffle(ref unvisitedPatternEdges, rng);
+                    Shuffle(ref unvisitedPatternEdges);
                 }
 
                 foreach (var patternEdge in unvisitedPatternEdges)
@@ -487,7 +487,7 @@ namespace GraphUtilities
 
                     if (randomMatch)
                     {
-                        Shuffle(ref unvisitedEdges, rng);
+                        Shuffle(ref unvisitedEdges);
                     }
 
                     bool success = false;
