@@ -212,6 +212,12 @@ namespace GraphUtilities
         /// </summary>
         public List<Vertex> Vertices { get; private set; } = new List<Vertex>();
 
+        /// <summary>
+        /// Random number generator
+        /// Set this if you want a custom seed
+        /// </summary>
+        public Random Random { get; set; } = new Random();
+
         // ----------------------------------------------------------------------------///
 
         /// <summary>
@@ -402,13 +408,11 @@ namespace GraphUtilities
         /// <returns>a mapping from pattern to host graph for every vertex + edge</returns>
         private MatchResult MatchRecursively(Vertex startVertex, bool randomMatch, bool verbose)
         {
-            Random rng = randomMatch ? new Random() : null;
-
             var possibleFirstMatches = FindVerticesLike(startVertex);
 
             if (randomMatch)
             {
-                Shuffle(ref possibleFirstMatches, rng);
+                Shuffle(ref possibleFirstMatches);
             }
 
             List<Edge> visitedPatternEdges = new List<Edge>();
@@ -597,15 +601,12 @@ namespace GraphUtilities
         }
 
         // based on Fisher-Yates shuffle
-        public void Shuffle<T>(ref IEnumerable<T> enumerable, Random rng = null)
+        public void Shuffle<T>(ref IEnumerable<T> enumerable)
         {
-            if (rng == null)
-                rng = new Random();
-
             List<T> list = enumerable.ToList();
             for (int n = list.Count() - 1; n >= 0; n--)
             {
-                int r = rng.Next(n + 1);
+                int r = Random.Next(n + 1);
                 T value = list[r];
                 list[r] = list[n];
                 list[n] = value;
