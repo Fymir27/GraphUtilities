@@ -124,9 +124,15 @@ namespace GraphUtilities
         public void ReplaceVertex(Vertex oldVertex, Vertex newVertex)
         {
             if (oldVertex == V1)
+            {
+                V1.Edges.Remove(this);
                 V1 = newVertex;
+            }
             else if (oldVertex == V2)
+            {
+                V2.Edges.Remove(this);
                 V2 = newVertex;
+            }
             else
                 throw new System.ArgumentException("Vertex is not adjacent to this edge!");
         }
@@ -552,7 +558,7 @@ namespace GraphUtilities
                 }
 
                 // tie edges of host graphs to replacement vertex
-                var unmatchedEdges = matchVertex.Edges.Where(e => !matchResult.Edges.Values.Contains(e));
+                var unmatchedEdges = matchVertex.Edges.Where(e => !matchResult.Edges.Values.Contains(e)).ToArray();
                 replacementVertex.Edges.AddRange(unmatchedEdges);
                 foreach (var e in unmatchedEdges)
                 {
