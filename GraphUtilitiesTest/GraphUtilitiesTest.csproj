@@ -61,6 +61,7 @@
     <Compile Include="DungeonGenTest.cs" />
     <Compile Include="ReplacementRuleTests.cs" />
     <Compile Include="AdvancedDungeonGen.cs" />
+    <Compile Include="FindCycleTest.cs" />
     <Compile Include="WrongUsageTests.cs" />
   </ItemGroup>
   <ItemGroup>

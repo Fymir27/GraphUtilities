@@ -619,5 +619,139 @@ namespace GraphUtilities
             }
             enumerable = list;
         }
+
+        public List<List<Vertex>> GetCycles()
+        {
+            if(Vertices.Count < 3)
+            {
+                return new List<List<Vertex>>();
+            }
+
+            var result = new List<List<Vertex>>();
+            var used = new List<Vertex>();
+            var parent = new Dictionary<Vertex, Vertex>();
+            var todo = new Stack<Vertex>();
+
+            todo.Push(Vertices[0]);
+            parent.Add(Vertices[0], Vertices[0]);
+
+            while(todo.Count > 0)
+            {
+                var cur = todo.Pop();
+                used.Add(cur);
+
+                foreach(var edge in cur.Edges)
+                {
+                    var neighbour = edge.GetOtherVertex(cur);
+
+                    if (parent[cur] == neighbour)
+                        continue;
+
+                    if(used.Contains(neighbour))
+                    {
+                        var cycle = new List<Vertex>();
+
+                        cycle.Add(parent[cur]);
+                        cycle.Add(cur);
+                        var p = neighbour;
+                        while (!cycle.Contains(p))
+                        {
+                            cycle.Add(p);
+                            p = parent[p];
+                        }      
+
+                        result.Add(cycle);
+                    }
+                    else if(!parent.ContainsKey(neighbour))
+                    {
+                        parent.Add(neighbour, cur);
+                        todo.Push(neighbour);
+                    }
+                }
+            }
+
+            int BitCount(int val)
+            {
+                int count = 0;
+                while (val > 0)
+                {
+                    if ((val & 1) > 0)
+                        count++;
+                    val >>= 1;                   
+                }
+                return count;
+            }
+
+            var cyclesInBits = new List<int>();
+            var edgeCount = new List<int>();
+            
+            foreach(var cycle in result)
+            {
+                int bits = 0;
+                for (int i = 0; i < cycle.Count; i++)
+                {
+                    var edge = cycle[i].Edges.Where(e => e.GetOtherVertex(cycle[i]) == cycle[(i + 1) % cycle.Count]).First();
+                    if (edge.ID.Value >= 64)
+                        throw new Exception("Too many Edges in Graph");
+                    bits |= 1 << edge.ID.Value;
+                }
+                cyclesInBits.Add(bits);
+                edgeCount.Add(BitCount(bits));
+            }
+
+            Console.Write("Cycles in bits: [");
+            foreach (var c in cyclesInBits)
+            {
+                Console.Write(c + ",");
+            }
+            Console.WriteLine("]");
+
+            var toRemove = new HashSet<int>(); // indexes
+
+            int baseCycleCount = cyclesInBits.Count;
+            for (int outer = 0; outer < baseCycleCount; outer++)
+            {
+                for (int inner = outer; inner < baseCycleCount; inner++)
+                {
+                    int a = cyclesInBits[inner];
+                    int b = cyclesInBits[outer];
+                    int newCycle = a ^ b;                    
+                    if (newCycle != 0 && !cyclesInBits.Contains(newCycle))
+                    {
+                        int newEdgeCount = BitCount(newCycle);
+                        Console.WriteLine($"New cycle found: {newCycle}; edgeCount: {newEdgeCount}");
+                        if(newEdgeCount > edgeCount[inner] || newEdgeCount > edgeCount[outer])
+                        {
+                            Console.WriteLine("Ignoring... (more edges than a and b)");
+                            continue;
+                        }
+
+                        if (edgeCount[inner] > edgeCount[outer])
+                        {
+                            Console.WriteLine($"Removing inner cycle: {a}");
+                            toRemove.Add(a); 
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Removing outer cycle: {b}");
+                            toRemove.Add(b); 
+                        }
+
+                        cyclesInBits.Add(newCycle);
+                    }
+                }
+            }
+
+            cyclesInBits.RemoveAll(toRemove.Contains);
+
+            Console.Write("Cycles in bits: [");
+            foreach (var c in cyclesInBits)
+            {
+                Console.Write(c + ",");
+            }
+            Console.WriteLine("]");
+
+            return result;
+        }
     }
 }
