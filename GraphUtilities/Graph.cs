@@ -620,7 +620,7 @@ namespace GraphUtilities
             enumerable = list;
         }
 
-        public List<List<Vertex>> GetCycles()
+        public List<List<Vertex>> GetCycles(bool simplifyToSmallest = false)
         {
             if(Vertices.Count < 3)
             {
@@ -670,6 +670,16 @@ namespace GraphUtilities
                 }
             }
 
+            if(simplifyToSmallest && result.Count > 0)
+            {
+                return SmallestBase(result);
+            }
+
+            return result;
+        }
+
+        private List<List<Vertex>> SmallestBase(List<List<Vertex>> initialBase)
+        {
             int BitCount(int val)
             {
                 int count = 0;
@@ -677,15 +687,15 @@ namespace GraphUtilities
                 {
                     if ((val & 1) > 0)
                         count++;
-                    val >>= 1;                   
+                    val >>= 1;
                 }
                 return count;
             }
 
             var cyclesInBits = new List<int>();
             var edgeCount = new List<int>();
-            
-            foreach(var cycle in result)
+
+            foreach (var cycle in initialBase)
             {
                 int bits = 0;
                 for (int i = 0; i < cycle.Count; i++)
@@ -715,12 +725,12 @@ namespace GraphUtilities
                 {
                     int a = cyclesInBits[inner];
                     int b = cyclesInBits[outer];
-                    int newCycle = a ^ b;                    
+                    int newCycle = a ^ b;
                     if (newCycle != 0 && !cyclesInBits.Contains(newCycle))
                     {
                         int newEdgeCount = BitCount(newCycle);
                         Console.WriteLine($"New cycle found: {newCycle}; edgeCount: {newEdgeCount}");
-                        if(newEdgeCount > edgeCount[inner] || newEdgeCount > edgeCount[outer])
+                        if (newEdgeCount > edgeCount[inner] || newEdgeCount > edgeCount[outer])
                         {
                             Console.WriteLine("Ignoring... (more edges than a and b)");
                             continue;
@@ -729,12 +739,12 @@ namespace GraphUtilities
                         if (edgeCount[inner] > edgeCount[outer])
                         {
                             Console.WriteLine($"Removing inner cycle: {a}");
-                            toRemove.Add(a); 
+                            toRemove.Add(a);
                         }
                         else
                         {
                             Console.WriteLine($"Removing outer cycle: {b}");
-                            toRemove.Add(b); 
+                            toRemove.Add(b);
                         }
 
                         cyclesInBits.Add(newCycle);
@@ -751,7 +761,61 @@ namespace GraphUtilities
             }
             Console.WriteLine("]");
 
-            return result;
+            List<int> BitIndexes(int number)
+            {
+                var result = new List<int>();
+
+                int index = 0;
+                while(number > 0)
+                {
+                    if((number & 1) > 0)
+                    {
+                        result.Add(index);
+                    }
+                    number >>= 1;
+                    index++;
+                }
+
+                return result;
+            }
+
+            var smallestBase = new List<List<Vertex>>();
+
+            foreach (var bitCycle in cyclesInBits)
+            {
+                var cycle = new List<Vertex>();
+
+                var edgeIDs = BitIndexes(bitCycle);
+
+                // find a starting point
+                //int currentEdgeID = edgeIDs[0];
+                Vertex currentVertex = null;
+                Edge currentEdge = null;
+                foreach (var vertex in Vertices)
+                {
+                    Edge edge = vertex.Edges.FirstOrDefault(e => e.ID.Value == edgeIDs[0]);
+                    if(edge != null)
+                    {
+                        currentVertex = vertex;
+                        currentEdge = edge;
+                        break;
+                    }
+                }
+
+                //cycle.Add(currentVertex);
+
+                while(edgeIDs.Count > 0)
+                {        
+                    currentVertex = currentEdge.GetOtherVertex(currentVertex);
+                    cycle.Add(currentVertex);
+                    edgeIDs.Remove(currentEdge.ID.Value);
+                    currentEdge = currentVertex.Edges.FirstOrDefault(e => edgeIDs.Contains(e.ID.Value));                    
+                }
+
+                smallestBase.Add(cycle);
+            }    
+
+            return smallestBase;
         }
     }
 }

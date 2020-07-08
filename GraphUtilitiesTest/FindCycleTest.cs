@@ -32,7 +32,7 @@ namespace GraphUtilitiesTest
 
             Console.WriteLine(GraphPrinter.ToDot(graph));
 
-            var cycles = graph.GetCycles();
+            var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 2);
         }
@@ -61,7 +61,7 @@ namespace GraphUtilitiesTest
 
             Console.WriteLine(GraphPrinter.ToDot(graph));
 
-            var cycles = graph.GetCycles();
+            var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 3);
         }
@@ -95,7 +95,7 @@ namespace GraphUtilitiesTest
 
             Console.WriteLine(GraphPrinter.ToDot(graph));
 
-            var cycles = graph.GetCycles();
+            var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 2);
         }
