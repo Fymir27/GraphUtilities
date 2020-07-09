@@ -100,5 +100,24 @@ namespace GraphUtilitiesTest
             Assert.IsTrue(cycles.Count == 2);
         }
 
+        [TestMethod]
+        public void TestXor()
+        {
+            var a = new Graph.BitCycle(5);
+            var b = new Graph.BitCycle(7);
+
+            a.Set(0);
+            b.Set(0);
+
+            a.Set(1);
+            b.Set(6);
+
+            Assert.IsTrue(a.BitsSet == 2);
+            Assert.IsTrue(b.BitsSet == 2);
+
+            var res = a.Xor(b);
+
+            Assert.IsTrue(res.BitsSet == 2);
+        }
     }
 }

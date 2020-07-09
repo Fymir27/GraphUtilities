@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Collections;
 
 namespace GraphUtilities
 {
@@ -219,6 +220,11 @@ namespace GraphUtilities
         public List<Vertex> Vertices { get; private set; } = new List<Vertex>();
 
         /// <summary>
+        /// Set of Edges in the graph
+        /// </summary>
+        public HashSet<Edge> Edges { get; private set; } = new HashSet<Edge>();
+
+        /// <summary>
         /// Random number generator
         /// Set this if you want a custom seed
         /// </summary>
@@ -255,7 +261,10 @@ namespace GraphUtilities
         public void AddEdge(Edge edge)
         {
             AssertEdge(edge);
-
+            if(!Edges.Add(edge))
+            {
+                throw new System.ArgumentException("Edge already present in Graph!");
+            }
             edge.V1.Edges.Add(edge);
             edge.V2.Edges.Add(edge);
         }
@@ -286,6 +295,10 @@ namespace GraphUtilities
         public void RemoveEdge(Edge edge)
         {
             AssertEdge(edge);
+            if (!Edges.Contains(edge))
+            {
+                throw new System.ArgumentException("Edge not in Graph!");
+            }
             // remove the edge from both end vertices
             edge.V1.Edges.Remove(edge);
             edge.V2.Edges.Remove(edge);
@@ -391,7 +404,7 @@ namespace GraphUtilities
         /// </summary>
         /// <param name="edge">edge to validate</param>
         public void AssertEdge(Edge edge)
-        {
+        {            
             AssertVertex(edge.V1);
             AssertVertex(edge.V2);
         }
@@ -678,35 +691,128 @@ namespace GraphUtilities
             return result;
         }
 
-        private List<List<Vertex>> SmallestBase(List<List<Vertex>> initialBase)
+        public class BitCycle
         {
-            int BitCount(int val)
+            bool[] bits;
+            public int BitsSet { get => IndexesSet.Count; }
+            public List<int> IndexesSet { get; private set; }
+
+            public BitCycle(int size)
             {
-                int count = 0;
-                while (val > 0)
-                {
-                    if ((val & 1) > 0)
-                        count++;
-                    val >>= 1;
-                }
-                return count;
+                bits = new bool[size];
+                IndexesSet = new List<int>();
             }
 
-            var cyclesInBits = new List<int>();
-            var edgeCount = new List<int>();
+            public void Set(int index)
+            {
+                if (!bits[index])
+                    IndexesSet.Add(index);
+
+                bits[index] = true;               
+            }
+
+            public void Unset(int index)
+            {
+                if (bits[index])
+                    IndexesSet.Remove(index);
+
+                bits[index] = false;
+            }
+
+            public BitCycle Xor(BitCycle other)
+            {
+                BitCycle min, max;
+                if(bits.Length > other.bits.Length)
+                {
+                    min = other;
+                    max = this;
+                }
+                else
+                {
+                    min = this;
+                    max = other;
+                }
+                BitCycle result = new BitCycle(max.bits.Length);
+
+                for (int i = 0; i < min.bits.Length; i++)
+                {
+                    if(min.bits[i] ^ max.bits[i])
+                    {
+                        result.Set(i);
+                    }
+                    else
+                    {
+                        result.Unset(i);
+                    }
+                }
+
+                for (int i = min.bits.Length; i < max.bits.Length; i++)
+                {
+                    if(max.bits[i])
+                    {
+                        result.Set(i);
+                    }
+                }
+
+                return result;
+            }
+
+            public override bool Equals(object obj)
+            {
+                BitCycle other = obj as BitCycle;
+                if (other == null)
+                    return false;
+                if (other.bits.Length != bits.Length)
+                    return false;
+                for (int i = 0; i < bits.Length; i++)
+                {
+                    if (bits[i] != other.bits[i])
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        private List<List<Vertex>> SmallestBase(List<List<Vertex>> initialBase)
+        {  
+            var cyclesInBits = new List<BitCycle>();
 
             foreach (var cycle in initialBase)
             {
-                int bits = 0;
-                for (int i = 0; i < cycle.Count; i++)
+                cyclesInBits.Add(new BitCycle(Edges.Count));
+            }
+
+            List<Edge> edgeList = new List<Edge>();
+
+            int bit = 0;
+            foreach (var edge in Edges)
+            {
+                edgeList.Add(edge);
+                for (int i = 0; i < initialBase.Count; i++)
                 {
-                    var edge = cycle[i].Edges.Where(e => e.GetOtherVertex(cycle[i]) == cycle[(i + 1) % cycle.Count]).First();
-                    if (edge.ID.Value >= 64)
-                        throw new Exception("Too many Edges in Graph");
-                    bits |= 1 << edge.ID.Value;
+
+                    int indexA = initialBase[i].IndexOf(edge.V1);
+                    if (indexA == -1)
+                        continue;
+                    int indexB = initialBase[i].IndexOf(edge.V2);
+                    if (indexB == -1)
+                        continue;
+                    if(indexA > indexB)
+                    {
+                        if(indexA - indexB == 1 || indexA == initialBase[i].Count - 1 && indexB == 0)
+                        {
+                            cyclesInBits[i].Set(bit);
+                        }
+                    } 
+                    else 
+                    {
+                        if (indexB - indexA == 1 || indexB == initialBase[i].Count - 1 && indexA == 0)
+                        {
+                            cyclesInBits[i].Set(bit);
+                        }
+                    }
                 }
-                cyclesInBits.Add(bits);
-                edgeCount.Add(BitCount(bits));
+                bit++;
             }
 
             Console.Write("Cycles in bits: [");
@@ -716,27 +822,26 @@ namespace GraphUtilities
             }
             Console.WriteLine("]");
 
-            var toRemove = new HashSet<int>(); // indexes
+            var toRemove = new HashSet<BitCycle>(); // indexes
 
             int baseCycleCount = cyclesInBits.Count;
             for (int outer = 0; outer < baseCycleCount; outer++)
             {
                 for (int inner = outer; inner < baseCycleCount; inner++)
                 {
-                    int a = cyclesInBits[inner];
-                    int b = cyclesInBits[outer];
-                    int newCycle = a ^ b;
-                    if (newCycle != 0 && !cyclesInBits.Contains(newCycle))
+                    var a = cyclesInBits[inner];
+                    var b = cyclesInBits[outer];
+                    var newCycle = a.Xor(b);
+                    if (newCycle.BitsSet != 0 && !cyclesInBits.Contains(newCycle))
                     {
-                        int newEdgeCount = BitCount(newCycle);
-                        Console.WriteLine($"New cycle found: {newCycle}; edgeCount: {newEdgeCount}");
-                        if (newEdgeCount > edgeCount[inner] || newEdgeCount > edgeCount[outer])
+                        Console.WriteLine($"New cycle found: {newCycle}; edgeCount: {newCycle.BitsSet}");
+                        if (newCycle.BitsSet > a.BitsSet || newCycle.BitsSet > b.BitsSet)
                         {
                             Console.WriteLine("Ignoring... (more edges than a and b)");
                             continue;
                         }
 
-                        if (edgeCount[inner] > edgeCount[outer])
+                        if (a.BitsSet > b.BitsSet)
                         {
                             Console.WriteLine($"Removing inner cycle: {a}");
                             toRemove.Add(a);
@@ -785,31 +890,23 @@ namespace GraphUtilities
             {
                 var cycle = new List<Vertex>();
 
-                var edgeIDs = BitIndexes(bitCycle);
+                var edgeIDs = bitCycle.IndexesSet;
+                var edgesInCycle = new List<Edge>();
+                edgeIDs.ForEach(i => edgesInCycle.Add(edgeList[i]));
 
                 // find a starting point
                 //int currentEdgeID = edgeIDs[0];
-                Vertex currentVertex = null;
-                Edge currentEdge = null;
-                foreach (var vertex in Vertices)
-                {
-                    Edge edge = vertex.Edges.FirstOrDefault(e => e.ID.Value == edgeIDs[0]);
-                    if(edge != null)
-                    {
-                        currentVertex = vertex;
-                        currentEdge = edge;
-                        break;
-                    }
-                }
+                Edge currentEdge = edgesInCycle[0];
+                Vertex currentVertex = currentEdge.V1;
 
                 //cycle.Add(currentVertex);
 
-                while(edgeIDs.Count > 0)
+                while (edgesInCycle.Count > 0)
                 {        
                     currentVertex = currentEdge.GetOtherVertex(currentVertex);
                     cycle.Add(currentVertex);
-                    edgeIDs.Remove(currentEdge.ID.Value);
-                    currentEdge = currentVertex.Edges.FirstOrDefault(e => edgeIDs.Contains(e.ID.Value));                    
+                    edgesInCycle.Remove(currentEdge);
+                    currentEdge = currentVertex.Edges.FirstOrDefault(edgesInCycle.Contains);                    
                 }
 
                 smallestBase.Add(cycle);
