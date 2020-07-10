@@ -51,6 +51,11 @@ namespace GraphUtilities
                 Edges = original.Edges.ToList()
             };
         }
+
+        public Edge GetEdgeTo(Vertex other)
+        {
+            return Edges.FirstOrDefault(e => e.GetOtherVertex(this) == other);
+        }
     }
 
     /// <summary>
@@ -111,6 +116,11 @@ namespace GraphUtilities
 
             V1 = first;
             V2 = second;
+        }
+
+        public bool AttachedTo(Vertex v)
+        {
+            return V1 == v || V2 == v;
         }
 
         public Vertex GetOtherVertex(Vertex vertex)
@@ -633,14 +643,45 @@ namespace GraphUtilities
             enumerable = list;
         }
 
-        public List<List<Vertex>> GetCycles(bool simplifyToSmallest = false)
+        public struct CycleSegment
+        {
+            public Vertex V;
+            public Edge E;
+            public CycleSegment(Vertex v, Edge e)
+            {
+                V = v;
+                E = e;
+            }
+
+            public override bool Equals(object obj)
+            {               
+                if (!(obj is CycleSegment))
+                    return false;
+
+                var other = (CycleSegment)obj;
+
+                return V == other.V && E == other.E;
+            }
+
+            public static bool operator ==(CycleSegment first, CycleSegment second)
+            {
+                return first.Equals(second);
+            }
+
+            public static bool operator !=(CycleSegment first, CycleSegment second)
+            {
+                return !first.Equals(second);
+            }
+        }
+
+        public List<List<CycleSegment>> GetCycles(bool simplifyToSmallest = false)
         {
             if(Vertices.Count < 3)
             {
-                return new List<List<Vertex>>();
+                return new List<List<CycleSegment>>();
             }
 
-            var result = new List<List<Vertex>>();
+            var result = new List<List<CycleSegment>>();
             var used = new List<Vertex>();
             var parent = new Dictionary<Vertex, Vertex>();
             var todo = new Stack<Vertex>();
@@ -662,15 +703,17 @@ namespace GraphUtilities
 
                     if(used.Contains(neighbour))
                     {
-                        var cycle = new List<Vertex>();
+                        var cycle = new List<CycleSegment>();
 
-                        cycle.Add(parent[cur]);
-                        cycle.Add(cur);
-                        var p = neighbour;
-                        while (!cycle.Contains(p))
+                        cycle.Add(new CycleSegment(parent[cur], parent[cur].GetEdgeTo(cur)));
+                        var segment = new CycleSegment(cur, cur.GetEdgeTo(neighbour));
+
+                        while (segment.V != cycle[0].V)
                         {
-                            cycle.Add(p);
-                            p = parent[p];
+                            cycle.Add(segment);
+                            var v = segment.E.GetOtherVertex(segment.V);
+                            var e = v.GetEdgeTo(parent[v]);
+                            segment = new CycleSegment(v, e);
                         }      
 
                         result.Add(cycle);
@@ -773,7 +816,7 @@ namespace GraphUtilities
             }
         }
 
-        private List<List<Vertex>> SmallestBase(List<List<Vertex>> initialBase)
+        private List<List<CycleSegment>> SmallestBase(List<List<CycleSegment>> initialBase)
         {  
             var cyclesInBits = new List<BitCycle>();
 
@@ -790,26 +833,9 @@ namespace GraphUtilities
                 edgeList.Add(edge);
                 for (int i = 0; i < initialBase.Count; i++)
                 {
-
-                    int indexA = initialBase[i].IndexOf(edge.V1);
-                    if (indexA == -1)
-                        continue;
-                    int indexB = initialBase[i].IndexOf(edge.V2);
-                    if (indexB == -1)
-                        continue;
-                    if(indexA > indexB)
+                    if(initialBase[i].Any(segm => segm.E == edge))
                     {
-                        if(indexA - indexB == 1 || indexA == initialBase[i].Count - 1 && indexB == 0)
-                        {
-                            cyclesInBits[i].Set(bit);
-                        }
-                    } 
-                    else 
-                    {
-                        if (indexB - indexA == 1 || indexB == initialBase[i].Count - 1 && indexA == 0)
-                        {
-                            cyclesInBits[i].Set(bit);
-                        }
+                        cyclesInBits[i].Set(bit);
                     }
                 }
                 bit++;
@@ -884,11 +910,11 @@ namespace GraphUtilities
                 return result;
             }
 
-            var smallestBase = new List<List<Vertex>>();
+            var smallestBase = new List<List<CycleSegment>>();
 
             foreach (var bitCycle in cyclesInBits)
             {
-                var cycle = new List<Vertex>();
+                var cycle = new List<CycleSegment>();
 
                 var edgeIDs = bitCycle.IndexesSet;
                 var edgesInCycle = new List<Edge>();
@@ -902,9 +928,9 @@ namespace GraphUtilities
                 //cycle.Add(currentVertex);
 
                 while (edgesInCycle.Count > 0)
-                {        
+                {
+                    cycle.Add(new CycleSegment(currentVertex, currentEdge));
                     currentVertex = currentEdge.GetOtherVertex(currentVertex);
-                    cycle.Add(currentVertex);
                     edgesInCycle.Remove(currentEdge);
                     currentEdge = currentVertex.Edges.FirstOrDefault(edgesInCycle.Contains);                    
                 }
