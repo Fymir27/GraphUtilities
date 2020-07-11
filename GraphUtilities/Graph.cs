@@ -765,37 +765,6 @@ namespace GraphUtilities
             enumerable = list;
         }      
 
-        public struct CycleSegment
-        {
-            public Vertex V;
-            public Edge E;
-            public CycleSegment(Vertex v, Edge e)
-            {
-                V = v;
-                E = e;
-            }
-
-            public override bool Equals(object obj)
-            {               
-                if (!(obj is CycleSegment))
-                    return false;
-
-                var other = (CycleSegment)obj;
-
-                return V == other.V && E == other.E;
-            }
-
-            public static bool operator ==(CycleSegment first, CycleSegment second)
-            {
-                return first.Equals(second);
-            }
-
-            public static bool operator !=(CycleSegment first, CycleSegment second)
-            {
-                return !first.Equals(second);
-            }
-        }
-
         public List<Cycle> GetCycles(bool simplifyToSmallest = false)
         {
             if(Vertices.Count < 3)
@@ -854,124 +823,10 @@ namespace GraphUtilities
             }
 
             return result;
-        }
-
-        public class BitCycle
-        {
-            bool[] bits;
-            public int BitsSet { get => IndexesSet.Count; }
-            public List<int> IndexesSet { get; private set; }
-
-            public BitCycle(int size)
-            {
-                bits = new bool[size];
-                IndexesSet = new List<int>();
-            }
-
-            public void Set(int index)
-            {
-                if (!bits[index])
-                    IndexesSet.Add(index);
-
-                bits[index] = true;               
-            }
-
-            public void Unset(int index)
-            {
-                if (bits[index])
-                    IndexesSet.Remove(index);
-
-                bits[index] = false;
-            }
-
-            public BitCycle Xor(BitCycle other)
-            {
-                BitCycle min, max;
-                if(bits.Length > other.bits.Length)
-                {
-                    min = other;
-                    max = this;
-                }
-                else
-                {
-                    min = this;
-                    max = other;
-                }
-                BitCycle result = new BitCycle(max.bits.Length);
-
-                for (int i = 0; i < min.bits.Length; i++)
-                {
-                    if(min.bits[i] ^ max.bits[i])
-                    {
-                        result.Set(i);
-                    }
-                    else
-                    {
-                        result.Unset(i);
-                    }
-                }
-
-                for (int i = min.bits.Length; i < max.bits.Length; i++)
-                {
-                    if(max.bits[i])
-                    {
-                        result.Set(i);
-                    }
-                }
-
-                return result;
-            }
-
-            public override bool Equals(object obj)
-            {
-                BitCycle other = obj as BitCycle;
-                if (other == null)
-                    return false;
-                if (other.bits.Length != bits.Length)
-                    return false;
-                for (int i = 0; i < bits.Length; i++)
-                {
-                    if (bits[i] != other.bits[i])
-                        return false;
-                }
-                return true;
-            }
-        }
+        }              
 
         private List<Cycle> SmallestBase(List<Cycle> initialBase)
-        {  
-            /*
-            var cyclesInBits = new List<BitCycle>();
-
-            foreach (var cycle in initialBase)
-            {
-                cyclesInBits.Add(new BitCycle(Edges.Count));
-            }
-
-            List<Edge> edgeList = new List<Edge>();
-
-            int bit = 0;
-            foreach (var edge in Edges)
-            {
-                edgeList.Add(edge);
-                for (int i = 0; i < initialBase.Count; i++)
-                {
-                    if(initialBase[i].Any(segm => segm.E == edge))
-                    {
-                        cyclesInBits[i].Set(bit);
-                    }
-                }
-                bit++;
-            }
-
-            Console.Write("Cycles in bits: [");
-            foreach (var c in cyclesInBits)
-            {
-                Console.Write(c + ",");
-            }
-            Console.WriteLine("]");
-            */
-
+        {            
             List<Cycle> smallestBase = new List<Cycle>(initialBase);
 
             var toRemove = new HashSet<Cycle>(); // indexes
@@ -1012,64 +867,6 @@ namespace GraphUtilities
             smallestBase.RemoveAll(toRemove.Contains);
 
             return smallestBase;
-
-            /*
-
-            Console.Write("Cycles in bits: [");
-            foreach (var c in cyclesInBits)
-            {
-                Console.Write(c + ",");
-            }
-            Console.WriteLine("]");
-
-            List<int> BitIndexes(int number)
-            {
-                var result = new List<int>();
-
-                int index = 0;
-                while(number > 0)
-                {
-                    if((number & 1) > 0)
-                    {
-                        result.Add(index);
-                    }
-                    number >>= 1;
-                    index++;
-                }
-
-                return result;
-            }
-
-            var smallestBase = new List<List<CycleSegment>>();
-
-            foreach (var bitCycle in cyclesInBits)
-            {
-                var cycle = new List<CycleSegment>();
-
-                var edgeIDs = bitCycle.IndexesSet;
-                var edgesInCycle = new List<Edge>();
-                edgeIDs.ForEach(i => edgesInCycle.Add(edgeList[i]));
-
-                // find a starting point
-                //int currentEdgeID = edgeIDs[0];
-                Edge currentEdge = edgesInCycle[0];
-                Vertex currentVertex = currentEdge.V1;
-
-                //cycle.Add(currentVertex);
-
-                while (edgesInCycle.Count > 0)
-                {
-                    cycle.Add(new CycleSegment(currentVertex, currentEdge));
-                    currentVertex = currentEdge.GetOtherVertex(currentVertex);
-                    edgesInCycle.Remove(currentEdge);
-                    currentEdge = currentVertex.Edges.FirstOrDefault(edgesInCycle.Contains);                    
-                }
-
-                smallestBase.Add(cycle);
-            }    
-
-            return smallestBase;
-            */
         }
     }
 }
