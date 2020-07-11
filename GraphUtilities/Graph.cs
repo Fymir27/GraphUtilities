@@ -192,6 +192,97 @@ namespace GraphUtilities
         }
     }
 
+    public static class BitArrayExtensions
+    {
+        public static List<int> TrueBitsIndices(this BitArray bits)
+        {
+            List<int> result = new List<int>();
+            for (int i = 0; i < bits.Length; i++)
+            {
+                if(bits[i])
+                {
+                    result.Add(i);
+                }
+            }
+            return result;
+        }
+    }
+
+    public struct Cycle
+    {
+        public readonly Vertex StartingVertex;
+        public int EdgeCount { get => edges.Count; }
+
+        private Graph graph;
+        private List<Edge> edges;
+        private BitArray fingerprint;
+        private Vertex lastAddedVertex;
+
+        public Cycle(Graph graph, Vertex startingVertex)
+        {
+            this.graph = graph;
+            StartingVertex = startingVertex;
+            lastAddedVertex = startingVertex;
+            edges = new List<Edge>();
+            fingerprint = new BitArray(graph.Edges.Count);
+        }
+
+        public void AddEdge(Edge e)
+        {
+            if (!graph.Edges.Contains(e))
+            {
+                throw new ArgumentException("Can't add edge from a different graph!");
+            }
+            if (edges.Contains(e))
+            {
+                throw new ArgumentException("Edge already in cycle!");
+            }
+            if (!e.AttachedTo(lastAddedVertex))
+            {
+                throw new ArgumentException("Edge doesn't continue cycle!");
+            }
+            edges.Add(e);
+            fingerprint.Set(graph.Edges.IndexOf(e), true);
+            lastAddedVertex = e.GetOtherVertex(lastAddedVertex);
+        }
+
+        public List<Vertex> Vertices()
+        {
+            var result = new List<Vertex>();
+            var v = StartingVertex;
+            edges.ForEach(e =>
+            {
+                result.Add(v);
+                v = e.GetOtherVertex(v);
+            });
+            return result;
+        }
+
+        public Cycle MergeWith(Cycle other)
+        {
+            BitArray newFingerprint = fingerprint.Xor(other.fingerprint);
+
+            List<int> edgeIndexes = newFingerprint.TrueBitsIndices();
+            List<Edge> edgesToAdd = new List<Edge>();
+            foreach (var index in edgeIndexes)
+            {
+                edgesToAdd.Add(graph.Edges[index]);
+            }
+           
+            Vertex v = graph.Edges[edgeIndexes[0]].V1;
+            Cycle newCycle = new Cycle(graph, v);
+            while (edgeIndexes.Count > 0)
+            {
+                Edge next = v.Edges.First(edgesToAdd.Contains);
+                newCycle.AddEdge(next);
+                edgesToAdd.Remove(next);
+                v = next.GetOtherVertex(v);
+            }
+
+            return newCycle;
+        }
+    }
+
     /// <summary>
     /// represents an element-wise mapping from query graph (pattern) to matched sub-graph
     /// </summary>
@@ -232,7 +323,7 @@ namespace GraphUtilities
         /// <summary>
         /// Set of Edges in the graph
         /// </summary>
-        public HashSet<Edge> Edges { get; private set; } = new HashSet<Edge>();
+        public List<Edge> Edges { get; private set; } = new List<Edge>();
 
         /// <summary>
         /// Random number generator
@@ -271,10 +362,11 @@ namespace GraphUtilities
         public void AddEdge(Edge edge)
         {
             AssertEdge(edge);
-            if(!Edges.Add(edge))
+            if(Edges.Contains(edge))
             {
                 throw new System.ArgumentException("Edge already present in Graph!");
             }
+            Edges.Add(edge);
             edge.V1.Edges.Add(edge);
             edge.V2.Edges.Add(edge);
         }
@@ -309,6 +401,7 @@ namespace GraphUtilities
             {
                 throw new System.ArgumentException("Edge not in Graph!");
             }
+            Edges.Remove(edge);
             // remove the edge from both end vertices
             edge.V1.Edges.Remove(edge);
             edge.V2.Edges.Remove(edge);
@@ -641,7 +734,7 @@ namespace GraphUtilities
                 list[n] = value;
             }
             enumerable = list;
-        }
+        }      
 
         public struct CycleSegment
         {
