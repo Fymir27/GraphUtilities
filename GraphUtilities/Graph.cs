@@ -208,6 +208,8 @@ namespace GraphUtilities
         }
     }
 
+    // DISCLAIMER: if you use this class, don't change the graph
+    // while instances are still used, otherwise you might get problems
     public struct Cycle
     {
         public readonly Vertex StartingVertex;
@@ -260,9 +262,16 @@ namespace GraphUtilities
 
         public Cycle MergeWith(Cycle other)
         {
-            BitArray newFingerprint = fingerprint.Xor(other.fingerprint);
+            BitArray newFingerprint = new BitArray(fingerprint);
+            newFingerprint.Xor(other.fingerprint);
 
             List<int> edgeIndexes = newFingerprint.TrueBitsIndices();
+
+            if(edgeIndexes.Count == 0)
+            {
+                return new Cycle(graph, null);
+            }
+
             List<Edge> edgesToAdd = new List<Edge>();
             foreach (var index in edgeIndexes)
             {
@@ -271,7 +280,7 @@ namespace GraphUtilities
            
             Vertex v = graph.Edges[edgeIndexes[0]].V1;
             Cycle newCycle = new Cycle(graph, v);
-            while (edgeIndexes.Count > 0)
+            while (edgesToAdd.Count > 0)
             {
                 Edge next = v.Edges.First(edgesToAdd.Contains);
                 newCycle.AddEdge(next);
@@ -280,6 +289,26 @@ namespace GraphUtilities
             }
 
             return newCycle;
+        }
+
+        public override bool Equals(object obj)
+        {           
+            if (obj == null || !(obj is Cycle))
+                return false;
+
+            var other = (Cycle)obj;
+
+            if (graph != other.graph)
+                return false;
+
+            // if they're from the same graph, they should have same length bitarrays
+            for (int i = 0; i < fingerprint.Length; i++)
+            {
+                if (fingerprint[i] != other.fingerprint[i])
+                    return false;
+            }
+
+            return true;
         }
     }
 
@@ -767,14 +796,14 @@ namespace GraphUtilities
             }
         }
 
-        public List<List<CycleSegment>> GetCycles(bool simplifyToSmallest = false)
+        public List<Cycle> GetCycles(bool simplifyToSmallest = false)
         {
             if(Vertices.Count < 3)
             {
-                return new List<List<CycleSegment>>();
+                return new List<Cycle>();
             }
 
-            var result = new List<List<CycleSegment>>();
+            var result = new List<Cycle>();
             var used = new List<Vertex>();
             var parent = new Dictionary<Vertex, Vertex>();
             var todo = new Stack<Vertex>();
@@ -796,17 +825,17 @@ namespace GraphUtilities
 
                     if(used.Contains(neighbour))
                     {
-                        var cycle = new List<CycleSegment>();
+                        var cycle = new Cycle(this, parent[cur]);
 
-                        cycle.Add(new CycleSegment(parent[cur], parent[cur].GetEdgeTo(cur)));
-                        var segment = new CycleSegment(cur, cur.GetEdgeTo(neighbour));
+                        cycle.AddEdge(parent[cur].GetEdgeTo(cur));
+                        cycle.AddEdge(cur.GetEdgeTo(neighbour));
 
-                        while (segment.V != cycle[0].V)
+                        var v = neighbour;
+                        while (v != parent[cur])
                         {
-                            cycle.Add(segment);
-                            var v = segment.E.GetOtherVertex(segment.V);
                             var e = v.GetEdgeTo(parent[v]);
-                            segment = new CycleSegment(v, e);
+                            cycle.AddEdge(e);
+                            v = parent[v];
                         }      
 
                         result.Add(cycle);
@@ -909,8 +938,9 @@ namespace GraphUtilities
             }
         }
 
-        private List<List<CycleSegment>> SmallestBase(List<List<CycleSegment>> initialBase)
+        private List<Cycle> SmallestBase(List<Cycle> initialBase)
         {  
+            /*
             var cyclesInBits = new List<BitCycle>();
 
             foreach (var cycle in initialBase)
@@ -940,27 +970,30 @@ namespace GraphUtilities
                 Console.Write(c + ",");
             }
             Console.WriteLine("]");
+            */
 
-            var toRemove = new HashSet<BitCycle>(); // indexes
+            List<Cycle> smallestBase = new List<Cycle>(initialBase);
 
-            int baseCycleCount = cyclesInBits.Count;
+            var toRemove = new HashSet<Cycle>(); // indexes
+
+            int baseCycleCount = initialBase.Count;
             for (int outer = 0; outer < baseCycleCount; outer++)
             {
-                for (int inner = outer; inner < baseCycleCount; inner++)
+                for (int inner = outer + 1; inner < baseCycleCount; inner++)
                 {
-                    var a = cyclesInBits[inner];
-                    var b = cyclesInBits[outer];
-                    var newCycle = a.Xor(b);
-                    if (newCycle.BitsSet != 0 && !cyclesInBits.Contains(newCycle))
+                    var a = initialBase[inner];
+                    var b = initialBase[outer];
+                    var newCycle = a.MergeWith(b);
+                    if (newCycle.EdgeCount != 0 && !smallestBase.Contains(newCycle))
                     {
-                        Console.WriteLine($"New cycle found: {newCycle}; edgeCount: {newCycle.BitsSet}");
-                        if (newCycle.BitsSet > a.BitsSet || newCycle.BitsSet > b.BitsSet)
+                        Console.WriteLine($"New cycle found: {newCycle}");
+                        if (newCycle.EdgeCount > a.EdgeCount || newCycle.EdgeCount > b.EdgeCount)
                         {
                             Console.WriteLine("Ignoring... (more edges than a and b)");
                             continue;
                         }
 
-                        if (a.BitsSet > b.BitsSet)
+                        if (a.EdgeCount > b.EdgeCount)
                         {
                             Console.WriteLine($"Removing inner cycle: {a}");
                             toRemove.Add(a);
@@ -971,12 +1004,16 @@ namespace GraphUtilities
                             toRemove.Add(b);
                         }
 
-                        cyclesInBits.Add(newCycle);
+                        smallestBase.Add(newCycle);
                     }
                 }
             }
 
-            cyclesInBits.RemoveAll(toRemove.Contains);
+            smallestBase.RemoveAll(toRemove.Contains);
+
+            return smallestBase;
+
+            /*
 
             Console.Write("Cycles in bits: [");
             foreach (var c in cyclesInBits)
@@ -1032,6 +1069,7 @@ namespace GraphUtilities
             }    
 
             return smallestBase;
+            */
         }
     }
 }
