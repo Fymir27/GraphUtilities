@@ -35,6 +35,8 @@ namespace GraphUtilitiesTest
             var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 2);
+            Assert.IsTrue(cycles[0].EdgeCount == 3);
+            Assert.IsTrue(cycles[1].EdgeCount == 3);
         }
 
         [TestMethod]
@@ -64,6 +66,9 @@ namespace GraphUtilitiesTest
             var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 3);
+            Assert.IsTrue(cycles[0].EdgeCount == 3);
+            Assert.IsTrue(cycles[1].EdgeCount == 3);
+            Assert.IsTrue(cycles[2].EdgeCount == 3);
         }
 
         [TestMethod]
@@ -98,26 +103,8 @@ namespace GraphUtilitiesTest
             var cycles = graph.GetCycles(true);
 
             Assert.IsTrue(cycles.Count == 2);
-        }
-
-        [TestMethod]
-        public void TestXor()
-        {
-            var a = new Graph.BitCycle(5);
-            var b = new Graph.BitCycle(7);
-
-            a.Set(0);
-            b.Set(0);
-
-            a.Set(1);
-            b.Set(6);
-
-            Assert.IsTrue(a.BitsSet == 2);
-            Assert.IsTrue(b.BitsSet == 2);
-
-            var res = a.Xor(b);
-
-            Assert.IsTrue(res.BitsSet == 2);
+            Assert.IsTrue(cycles[0].EdgeCount == 4);
+            Assert.IsTrue(cycles[1].EdgeCount == 4);
         }
     }
 }
