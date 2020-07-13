@@ -265,20 +265,20 @@ namespace GraphUtilities
             BitArray newFingerprint = new BitArray(fingerprint);
             newFingerprint.Xor(other.fingerprint);
 
-            List<int> edgeIndexes = newFingerprint.TrueBitsIndices();
+            List<int> edgeIndices = newFingerprint.TrueBitsIndices();
 
-            if(edgeIndexes.Count == 0)
+            if(edgeIndices.Count == 0)
             {
                 return new Cycle(graph, null);
             }
 
-            List<Edge> edgesToAdd = new List<Edge>();
-            foreach (var index in edgeIndexes)
+            var edgesToAdd = new List<Edge>();
+            foreach (var index in edgeIndices)
             {
                 edgesToAdd.Add(graph.Edges[index]);
             }
            
-            Vertex v = graph.Edges[edgeIndexes[0]].V1;
+            Vertex v = edgesToAdd[0].V1;
             Cycle newCycle = new Cycle(graph, v);
             while (edgesToAdd.Count > 0)
             {
@@ -289,6 +289,48 @@ namespace GraphUtilities
             }
 
             return newCycle;
+        }
+
+        public List<List<Edge>> Overlap(Cycle other)
+        {
+            BitArray overlapFingerprint = new BitArray(fingerprint);
+            overlapFingerprint.And(other.fingerprint);
+            var overlappingEdgeIndices = overlapFingerprint.TrueBitsIndices();
+
+            if(overlappingEdgeIndices.Count == 0)
+            {
+                return new List<List<Edge>>();
+            }
+
+            var overlappingEdges = new List<Edge>();
+            foreach (var index in overlappingEdgeIndices)
+            {
+                overlappingEdges.Add(graph.Edges[index]);
+            }
+
+            var result = new List<List<Edge>>();
+            var curSegment = new List<Edge>();
+            Vertex v = overlappingEdges[0].V1;
+
+            while(overlappingEdges.Count > 0)
+            {
+                Edge next = v.Edges.FirstOrDefault(overlappingEdges.Contains);
+
+                if(next == null)
+                {
+                    result.Add(curSegment);
+                    curSegment = new List<Edge>();
+                    v = overlappingEdges[0].V1;
+                    continue;
+                }
+
+                curSegment.Add(next);
+                overlappingEdges.Remove(next);
+                v = next.GetOtherVertex(v);
+            }
+
+            result.Add(curSegment);
+            return result;
         }
 
         public override bool Equals(object obj)

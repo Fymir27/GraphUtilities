@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using GraphUtilities;
+using System.Collections.Generic;
 
 namespace GraphUtilitiesTest
 {
@@ -37,6 +38,11 @@ namespace GraphUtilitiesTest
             Assert.IsTrue(cycles.Count == 2);
             Assert.IsTrue(cycles[0].EdgeCount == 3);
             Assert.IsTrue(cycles[1].EdgeCount == 3);
+
+            List<List<Edge>> overlap = cycles[0].Overlap(cycles[1]);
+
+            Assert.IsTrue(overlap.Count == 1);
+            Assert.IsTrue(overlap[0].Count == 1);
         }
 
         [TestMethod]
@@ -69,6 +75,14 @@ namespace GraphUtilitiesTest
             Assert.IsTrue(cycles[0].EdgeCount == 3);
             Assert.IsTrue(cycles[1].EdgeCount == 3);
             Assert.IsTrue(cycles[2].EdgeCount == 3);
+
+            List<List<Edge>> overlap1 = cycles[0].Overlap(cycles[1]);
+            List<List<Edge>> overlap2 = cycles[1].Overlap(cycles[2]);
+            List<List<Edge>> overlap3 = cycles[0].Overlap(cycles[2]);
+
+            Assert.IsTrue(overlap1.Count == 1);
+            Assert.IsTrue(overlap2.Count == 1);
+            Assert.IsTrue(overlap3.Count == 1);            
         }
 
         [TestMethod]
@@ -105,6 +119,11 @@ namespace GraphUtilitiesTest
             Assert.IsTrue(cycles.Count == 2);
             Assert.IsTrue(cycles[0].EdgeCount == 4);
             Assert.IsTrue(cycles[1].EdgeCount == 4);
+
+            List<List<Edge>> overlap = cycles[0].Overlap(cycles[1]);
+
+            Assert.IsTrue(overlap.Count == 1);
+            Assert.IsTrue(overlap[0].Count == 1);
         }
     }
 }
