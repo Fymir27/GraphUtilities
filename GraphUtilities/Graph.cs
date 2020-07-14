@@ -262,9 +262,18 @@ namespace GraphUtilities
 
         public Cycle MergeWith(Cycle other)
         {
+            var edges = fingerprint.TrueBitsIndices();
+            var otherEdges = other.fingerprint.TrueBitsIndices();
+            BitArray overlap = new BitArray(fingerprint);
+            overlap.And(other.fingerprint);
+
+            if(overlap.TrueBitsIndices().Count == 0)
+            {
+                return new Cycle(graph, null);
+            }
+
             BitArray newFingerprint = new BitArray(fingerprint);
             newFingerprint.Xor(other.fingerprint);
-
             List<int> edgeIndices = newFingerprint.TrueBitsIndices();
 
             if(edgeIndices.Count == 0)
@@ -420,6 +429,13 @@ namespace GraphUtilities
                 throw new System.ArgumentException("Can't add a vertex twice! " + vertex);
             }
             Vertices.Add(vertex);
+            foreach (var edge in vertex.Edges)
+            {
+                if(!Edges.Contains(edge))
+                {
+                    Edges.Add(edge);
+                }
+            }
             return vertex;
         }
 
@@ -456,6 +472,7 @@ namespace GraphUtilities
             foreach (var edge in vertex.Edges)
             {
                 edge.GetOtherVertex(vertex).Edges.Remove(edge);
+                Edges.Remove(edge);
             }
 
             vertex.Edges.Clear();
@@ -760,7 +777,7 @@ namespace GraphUtilities
 
             // Add the rest of the replacement edges (that aren't directly replacing anything)
             foreach (var vertex in replacement.Vertices)
-            {
+            {                
                 if (!Vertices.Contains(vertex))
                 {
                     AddVertex(vertex);
